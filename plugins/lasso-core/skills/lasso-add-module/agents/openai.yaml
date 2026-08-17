@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lasso Add Module"
+  short_description: "Install an optional workspace module"
+  default_prompt: "Use $lasso-add-module to install the requested Lasso module into this workspace."

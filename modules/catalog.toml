@@ -1,0 +1,39 @@
+# Lasso module catalog — installable capability packs for agent monorepo workspaces.
+
+[[module]]
+id = "docs-index"
+version = "0.1.0"
+kind = "capability"
+description = "Documentation INDEX.md contract and checker scripts"
+path = "modules/docs-index"
+default = true
+
+[[module]]
+id = "lang-go"
+version = "0.1.0"
+kind = "convention"
+description = "Go coding conventions for Lasso workspaces"
+path = "modules/lang-go"
+skills = []
+
+[[module]]
+id = "lang-rust"
+version = "0.1.0"
+kind = "convention"
+description = "Rust coding conventions for Lasso workspaces"
+path = "modules/lang-rust"
+
+[[module]]
+id = "lang-nix"
+version = "0.1.0"
+kind = "convention"
+description = "Nix coding conventions for Lasso workspaces"
+path = "modules/lang-nix"
+
+[[module]]
+id = "security"
+version = "0.1.0"
+kind = "plugin"
+description = "Security scan skill pack (lightweight stub; extend in place)"
+path = "modules/security"
+skills = ["security-scan"]

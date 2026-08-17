@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Scan"
+  short_description: "Lightweight security review checklist"
+  default_prompt: "Use $security-scan to review this change for secrets, injection, and supply-chain risk."

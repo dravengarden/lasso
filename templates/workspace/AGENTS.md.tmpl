@@ -1,0 +1,58 @@
+# {{.Name}} — Lasso workspace guidance
+
+This repository is an **agent-native monorepo workspace** managed by [Lasso](https://github.com/dravengarden/lasso).
+It registers projects, bootstraps stable checkouts, stores durable work items,
+and installs optional modules. It does not own agent task state or project build
+systems.
+
+## Core contract
+
+- **Codex** is the execution kernel when available.
+{{- if .HasClaude }}
+- **Claude Code** follows through shared artifacts and thin adapters.
+{{- end }}
+{{- if .HasGrok }}
+- **Grok Build** follows the Claude-compatible discovery surfaces.
+{{- end }}
+- Project identity lives in `project-defs/<name>/project.toml` (`kind`, `repo`, `default_branch` only).
+- Optional modules are pinned in `lasso.lock.toml` and installed under `.lasso/modules/`.
+- Installable workflows live in `plugins/` (start with `lasso-core`).
+
+## Tool routing
+
+```bash
+lasso project list --format=json
+lasso project path <name>
+lasso project add --project=<name> --repo-url=<url>
+lasso setup --only=<name>
+lasso module list
+lasso module add <id>
+lasso module remove <id> --yes
+lasso work-item list --format=json
+lasso worktree list --format=json
+```
+
+After resolving a checkout, read its nearest `AGENTS.md` and use its own
+commands. Do not put build, deploy, or credentials into the registry.
+
+## Modules
+
+List available packs from the Lasso kit:
+
+```bash
+LASSO_KIT_ROOT=<path-to-lasso-product> lasso module list
+lasso module list --installed
+```
+
+Use the `lasso-add-module` / `lasso-remove-module` skills for guided changes.
+
+## Quality
+
+Prefer the owner gate in each project. For workspace-level coordination and
+multi-project changes, use the `verify-change` skill after deterministic checks.
+
+## Review
+
+Read `conventions/review.md` when present (installed via modules or copied from
+the kit). Reviewers are discovery adapters under `.codex/agents/` and
+`.claude/agents/`; the shared contract is the convention file.

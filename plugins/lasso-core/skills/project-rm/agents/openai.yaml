@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remove Project"
+  short_description: "Unregister a project without deleting its checkout"
+  default_prompt: "Use $project-rm to unregister this Lasso project while preserving unrelated repositories and durable docs."

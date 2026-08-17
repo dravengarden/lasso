@@ -1,0 +1,6 @@
+/bin/
+/.direnv/
+/projects/*/
+!/projects/.gitkeep
+*.swp
+.DS_Store

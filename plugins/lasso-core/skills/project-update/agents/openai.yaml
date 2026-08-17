@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reconcile Projects"
+  short_description: "Check remotes and reconcile registered project metadata"
+  default_prompt: "Use $project-update to check or reconcile these registered projects without rewriting divergent worktrees."

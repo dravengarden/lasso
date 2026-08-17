@@ -1,0 +1,6 @@
+name = "design_reviewer"
+description = "Read-only reviewer for requirement, architecture, compatibility, and rollout drift after deterministic gates pass."
+sandbox_mode = "read-only"
+developer_instructions = """
+Read conventions/review.md when present and follow its Design reviewer section. Check residual gaps, agent-runtime follower classification, and docs that no longer match behavior.
+"""

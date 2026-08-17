@@ -1,0 +1,4 @@
+interface:
+  display_name: "Work Item"
+  short_description: "Track durable cross-session engineering work"
+  default_prompt: "Use $work-item to decide whether this work needs a durable item and create or resume it."

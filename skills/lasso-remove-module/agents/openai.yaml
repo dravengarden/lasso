@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lasso Remove Module"
+  short_description: "Uninstall a workspace module"
+  default_prompt: "Use $lasso-remove-module to remove the requested module after confirmation."

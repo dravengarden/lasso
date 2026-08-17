@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lasso Add Language"
+  short_description: "Install a language convention module"
+  default_prompt: "Use $lasso-add-language to add the requested language convention pack."

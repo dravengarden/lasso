@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Add"
+  short_description: "Register an external repository and default checkout"
+  default_prompt: "Use $project-add to register this repository in Lasso safely."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lasso Doctor"
+  short_description: "Check CLI, root, registry, kit, and project discovery"
+  default_prompt: "Use $lasso-doctor to diagnose this Lasso plugin installation without changing workspace state."

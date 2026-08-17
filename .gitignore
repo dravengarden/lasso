@@ -1,0 +1,5 @@
+/bin/
+/.direnv/
+*.swp
+.DS_Store
+/tmp-workspace*/

@@ -1,0 +1,13 @@
+# Workspace task runner — extend per project needs.
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+# Validate durable work-item metadata.
+work-item-check:
+    lasso work-item validate
+
+# List installed modules.
+modules:
+    lasso module list --installed

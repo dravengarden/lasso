@@ -1,0 +1,36 @@
+{
+  "name": "lasso-core",
+  "version": "0.1.0",
+  "description": "Operate Lasso projects, stable checkouts, modules, durable work items, and cross-project verification from Codex.",
+  "author": {
+    "name": "dravengarden"
+  },
+  "homepage": "https://github.com/dravengarden/lasso",
+  "repository": "https://github.com/dravengarden/lasso",
+  "keywords": [
+    "codex",
+    "monorepo",
+    "agent",
+    "workspace"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Lasso Core",
+    "shortDescription": "Operate the Lasso agent monorepo workspace.",
+    "longDescription": "Provides Codex-native workflows for the Lasso project registry, stable checkouts, modules, durable work items, and owner-specific verification without duplicating agent task state.",
+    "developerName": "dravengarden",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Project discovery",
+      "Stable checkout discovery",
+      "Module install and remove",
+      "Durable work items",
+      "Cross-project verification"
+    ],
+    "defaultPrompt": [
+      "List projects in this workspace.",
+      "Add a module to this workspace.",
+      "Verify this change with each owning project's gate."
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lasso Init"
+  short_description: "Scaffold a new agent monorepo workspace"
+  default_prompt: "Use $lasso-init to create a new Lasso workspace with the requested runtimes and modules."

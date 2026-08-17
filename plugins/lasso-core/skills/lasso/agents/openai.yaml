@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lasso"
+  short_description: "Operate the Lasso monorepo workspace CLI"
+  default_prompt: "Use $lasso to route this workspace request to the correct lasso command or specialized skill."

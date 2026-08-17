@@ -1,0 +1,26 @@
+---
+type: docs_index
+description: Documentation index for the {{.Name}} Lasso workspace.
+---
+
+# Documentation index
+
+## Scope
+
+This tree documents the **{{.Name}}** workspace: how projects are registered,
+which modules are enabled, and where operators should look next.
+
+## Reading order
+
+1. Root [`../AGENTS.md`](../AGENTS.md) — agent routing
+2. [`../lasso.toml`](../lasso.toml) — workspace config
+3. [`../lasso.lock.toml`](../lasso.lock.toml) — pinned modules
+4. [`../work-items/README.md`](../work-items/README.md) — durable coordination
+
+## Workspace
+
+- [`../AGENTS.md`](../AGENTS.md)
+- [`../work-items/README.md`](../work-items/README.md)
+
+Use `lasso project list --format=json` for the live project inventory; do not
+hand-maintain a project list here.

@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Residual workspace-layer diagnostic for Lasso (not a runtime doctor).
+set -euo pipefail
+
+fail=0
+note() { printf '%s\n' "$*"; }
+err() { printf 'error: %s\n' "$*" >&2; fail=1; }
+
+if ! command -v lasso >/dev/null 2>&1; then
+    err "lasso not on PATH"
+else
+    note "lasso: $(command -v lasso)"
+    if ! out=$(lasso version --format=json 2>/dev/null); then
+        # fall back to plain version
+        note "lasso version: $(lasso version 2>/dev/null || echo unknown)"
+    else
+        note "lasso version json: $out"
+    fi
+fi
+
+if [[ -n ${LASSO_ROOT:-} ]]; then
+    note "LASSO_ROOT=$LASSO_ROOT"
+else
+    note "LASSO_ROOT unset (cwd discovery)"
+fi
+
+if [[ -n ${LASSO_KIT_ROOT:-} ]]; then
+    note "LASSO_KIT_ROOT=$LASSO_KIT_ROOT"
+    if [[ ! -f $LASSO_KIT_ROOT/modules/catalog.toml ]]; then
+        err "LASSO_KIT_ROOT missing modules/catalog.toml"
+    fi
+else
+    note "LASSO_KIT_ROOT unset"
+fi
+
+if root=$(lasso project list --format=json 2>/dev/null); then
+    note "registry reachable"
+    note "$root" | head -c 400
+    note ""
+else
+    err "cannot list projects (registry/root discovery failed)"
+fi
+
+if command -v lasso >/dev/null 2>&1; then
+    if lasso module list --format=json >/dev/null 2>&1; then
+        note "kit catalog reachable"
+    else
+        note "kit catalog not reachable (set LASSO_KIT_ROOT if you need modules)"
+    fi
+fi
+
+exit "$fail"
