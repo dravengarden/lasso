@@ -28,6 +28,19 @@ docs-index-check:
 verify: format-check lint test docs-index-check
     @echo "verify ok"
 
+# Documentation site (Astro Starlight)
+website-install:
+    cd website && npm install
+
+website-dev:
+    cd website && npm run dev
+
+website-build:
+    cd website && npm run build
+
+website-preview:
+    cd website && npm run preview
+
 doctor:
     command -v go
     command -v git

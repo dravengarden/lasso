@@ -1,0 +1,16 @@
+:root {
+  --sl-hue-accent: 199;
+  --sl-color-accent-low: hsl(199 60% 15%);
+  --sl-color-accent: hsl(199 90% 48%);
+  --sl-color-accent-high: hsl(199 95% 72%);
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: hsl(199 80% 90%);
+  --sl-color-accent: hsl(199 90% 40%);
+  --sl-color-accent-high: hsl(199 70% 25%);
+}
+
+.hero-tagline {
+  max-width: 42rem;
+}

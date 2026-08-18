@@ -27,3 +27,8 @@ Instance-specific fleet docs (machines, business projects) do not live here.
 ## Guides
 
 - [`guides/init.md`](guides/init.md)
+
+## Website
+
+Human-facing docs site (Astro Starlight) lives in [`../website/`](../website/)
+and publishes to https://dravengarden.github.io/lasso/.

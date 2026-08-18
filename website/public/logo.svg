@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" role="img" aria-label="Lasso">
+  <rect width="128" height="128" rx="28" fill="#0B1220"/>
+  <circle cx="64" cy="64" r="34" stroke="#38BDF8" stroke-width="8" stroke-linecap="round" stroke-dasharray="160 40"/>
+  <path d="M90 38c10 6 16 16 16 28" stroke="#7DD3FC" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="64" cy="64" r="10" fill="#38BDF8"/>
+</svg>

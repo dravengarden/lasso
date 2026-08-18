@@ -1,0 +1,49 @@
+---
+title: Lasso
+description: Agent-native monorepo workspace for AI agents.
+template: splash
+hero:
+  tagline: Rope repositories into one workspace for AI agents — without owning their build systems or task state.
+  image:
+    file: ../../assets/logo.svg
+  actions:
+    - text: Quick start
+      link: /lasso/guides/quick-start/
+      icon: right-arrow
+      variant: primary
+    - text: GitHub
+      link: https://github.com/dravengarden/lasso
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why Lasso?
+
+Bazel, Buck, Nx, and Moon own **build graphs**. Lasso owns the layer **above** that for the agent era: project identity, stable checkouts, shared conventions, installable skills, and durable coordination that must outlive a single agent task.
+
+<CardGrid stagger>
+  <Card title="Project registry" icon="document">
+    Identity-only TOML entries. Resolve a checkout, then follow the project's own commands.
+  </Card>
+  <Card title="Modules" icon="puzzle">
+    Incrementally `add` / `remove` language packs, security, docs checks, and more — pinned in `lasso.lock.toml`.
+  </Card>
+  <Card title="Skills-first" icon="seti:config">
+    Guided workflows for init, modules, work items, and verification — packaged as a Codex/Claude/Grok plugin.
+  </Card>
+  <Card title="Thin core" icon="rocket">
+    Agents own goals and plans. Projects own builds. Lasso stays an allowlisted workspace layer.
+  </Card>
+</CardGrid>
+
+## 30-second install
+
+```bash
+git clone git@github.com:dravengarden/lasso.git && cd lasso
+just build && export PATH="$PWD/bin:$PATH" LASSO_KIT_ROOT="$PWD"
+lasso init ~/my-fleet --runtime=codex,claude --module=lang-go
+```
+
+Then open the [quick start](/lasso/guides/quick-start/) to install the core plugin and register your first repository.

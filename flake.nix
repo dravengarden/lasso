@@ -50,11 +50,12 @@
             git
             shellcheck
             shfmt
+            nodejs_22
           ];
           shellHook = ''
             export PATH="$PWD/scripts:$PWD/bin:$PATH"
             export LASSO_KIT_ROOT="$PWD"
-            echo "lasso dev shell — $(go version | cut -d' ' -f3)" >&2
+            echo "lasso dev shell — $(go version | cut -d' ' -f3) · node $(node -v)" >&2
           '';
         };
       }
