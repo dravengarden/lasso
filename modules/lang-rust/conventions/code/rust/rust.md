@@ -1,8 +1,8 @@
 # Rust development standard
 
-This is the default for first-party Rust projects operated from Columbus. A
+This is the default for first-party Rust projects in a Lasso workspace. A
 closer repository guide may tighten it or document a justified exception. The
-owning repository keeps its toolchain, lockfiles, commands, and gates; Columbus
+owning repository keeps its toolchain, lockfiles, commands, and gates; Lasso
 does not execute builds on its behalf.
 
 The goal is a short edit-to-feedback loop without weakening correctness,
@@ -23,8 +23,8 @@ normally as `just` recipes:
 
 The complete gate must check formatting, run Clippy over every maintained
 target and feature, execute dependency policy, run tests, and build the shipped
-artifacts. Use `--locked`. Keep GitHub CI optional; on Hawk the authoritative
-gate is local and deterministic.
+artifacts. Use `--locked`. Keep GitHub CI optional; the authoritative gate is
+local and deterministic.
 
 If a repository contains independent Cargo workspaces, audit and test each
 one. Native, Wasm, and eBPF manifests do not inherit the root workspace merely

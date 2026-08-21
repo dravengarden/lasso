@@ -26,6 +26,9 @@ import (
 // $HOME/worktrees, matching the existing layout used by Lasso tasks.
 const RootEnv = "LASSO_WORKTREE_ROOT"
 
+// LegacyRootEnv is accepted while Columbus instances migrate onto Lasso.
+const LegacyRootEnv = "COLUMBUS_WORKTREE_ROOT"
+
 // defaultRootName is the directory under $HOME used when RootEnv is unset
 // and kept as an extra classification root after a host override.
 const defaultRootName = "worktrees"
@@ -114,6 +117,9 @@ type Action struct {
 // Root returns the canonical worktree root used by Create.
 func Root() (string, error) {
 	if v := strings.TrimSpace(os.Getenv(RootEnv)); v != "" {
+		return filepath.Abs(v)
+	}
+	if v := strings.TrimSpace(os.Getenv(LegacyRootEnv)); v != "" {
 		return filepath.Abs(v)
 	}
 	return defaultHomeRoot()

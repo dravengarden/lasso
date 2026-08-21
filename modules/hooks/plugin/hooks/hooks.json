@@ -1,0 +1,32 @@
+{
+  "description": "Stateless multi-machine Git context and safety guardrails for Lasso hosts.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-$PLUGIN_ROOT}}/hooks/session-start-context.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking machine and Git workspace context",
+            "additionalContextLimit": 1200
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(Bash|apply_patch|Edit|Write|NotebookEdit)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "PATH=\"$PATH:/run/current-system/sw/bin:/usr/bin\" python3 \"${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-$PLUGIN_ROOT}}/hooks/pre-tool-use.py\" || exit 2",
+            "timeout": 10,
+            "statusMessage": "Checking Lasso workspace safety"
+          }
+        ]
+      }
+    ]
+  }
+}

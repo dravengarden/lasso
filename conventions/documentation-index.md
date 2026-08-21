@@ -8,10 +8,12 @@ is not a second copy of the documentation.
 
 This convention applies to:
 
-- Lasso' root `docs/` tree;
-- machine and machine-template `docs/` trees under `machines/`;
+- the Lasso product `docs/` tree;
+- a workspace's owned `docs/` tree after `lasso init`;
 - a registered project's `projects/<name>/docs/` tree when that checkout is
-  present.
+  present;
+- optional instance docs trees (for example host or machine docs) when a
+  workspace opts into the same INDEX contract.
 
 Generated build output, dependency/vendor documentation, caches, and arbitrary
 documentation directories nested inside a dependency are not Lasso-owned

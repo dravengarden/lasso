@@ -296,20 +296,26 @@ func ensureCorePlugin(kitRoot, workspace string) error {
 }
 
 func ensurePluginManifests(pluginDir, name, version string) error {
-	codexDir := filepath.Join(pluginDir, ".codex-plugin")
-	claudeDir := filepath.Join(pluginDir, ".claude-plugin")
-	_ = os.MkdirAll(codexDir, 0o755)
-	_ = os.MkdirAll(claudeDir, 0o755)
+	codexPath := filepath.Join(pluginDir, ".codex-plugin", "plugin.json")
+	claudePath := filepath.Join(pluginDir, ".claude-plugin", "plugin.json")
+	// Preserve author-supplied manifests (e.g. hooks modules declare hooks/).
+	if _, err := os.Stat(codexPath); err == nil {
+		if _, err := os.Stat(claudePath); err == nil {
+			return nil
+		}
+	}
+	_ = os.MkdirAll(filepath.Dir(codexPath), 0o755)
+	_ = os.MkdirAll(filepath.Dir(claudePath), 0o755)
 	manifest := map[string]any{
 		"name":        name,
 		"version":     version,
 		"description": "Lasso module plugin " + name,
 		"skills":      "./skills/",
 	}
-	if err := writeJSON(filepath.Join(codexDir, "plugin.json"), manifest); err != nil {
+	if err := writeJSON(codexPath, manifest); err != nil {
 		return err
 	}
-	return writeJSON(filepath.Join(claudeDir, "plugin.json"), manifest)
+	return writeJSON(claudePath, manifest)
 }
 
 func writeJSON(path string, v any) error {

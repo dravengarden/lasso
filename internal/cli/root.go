@@ -32,8 +32,9 @@ func NewRoot() *cobra.Command {
 
 Manage project identity, stable checkouts, state-free worktrees, durable work
 items, and optional modules. The workspace root is identified by
-project-defs/registry.toml. Resolution uses --root, then LASSO_ROOT, then walks
-up from the current directory.`,
+project-defs/registry.toml. Resolution uses --root, then LASSO_ROOT
+(COLUMBUS_ROOT accepted during migration), then walks up from the current
+directory.`,
 		Version:           Version,
 		SilenceUsage:      true,
 		SilenceErrors:     false,

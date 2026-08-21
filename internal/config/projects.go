@@ -18,9 +18,11 @@ const (
 	ProjectDefsDir = "project-defs"
 	ProjectsRoot   = "projects"
 	RootEnv        = "LASSO_ROOT"
-	projectFile    = "project.toml"
-	registryFile   = "registry.toml"
-	registryV1     = 1
+	// LegacyRootEnv is accepted while Columbus instances migrate onto Lasso.
+	LegacyRootEnv = "COLUMBUS_ROOT"
+	projectFile   = "project.toml"
+	registryFile  = "registry.toml"
+	registryV1    = 1
 )
 
 var registryMarker = filepath.Join(ProjectDefsDir, registryFile)
@@ -57,15 +59,26 @@ const (
 
 func (p Project) IsExternal() bool { return p.Kind == KindExternal }
 
+// envWorkspaceRoot returns LASSO_ROOT, falling back to COLUMBUS_ROOT.
+func envWorkspaceRoot() (value, source string) {
+	if configured := strings.TrimSpace(os.Getenv(RootEnv)); configured != "" {
+		return configured, RootEnv
+	}
+	if configured := strings.TrimSpace(os.Getenv(LegacyRootEnv)); configured != "" {
+		return configured, LegacyRootEnv
+	}
+	return "", ""
+}
+
 // WorkspaceRoot walks upward until it finds project-defs/registry.toml.
 func WorkspaceRoot() (string, error) {
-	if configured := strings.TrimSpace(os.Getenv(RootEnv)); configured != "" {
+	if configured, source := envWorkspaceRoot(); configured != "" {
 		root, err := filepath.Abs(configured)
 		if err != nil {
-			return "", fmt.Errorf("resolve %s: %w", RootEnv, err)
+			return "", fmt.Errorf("resolve %s: %w", source, err)
 		}
 		if info, err := os.Stat(filepath.Join(root, registryMarker)); err != nil || info.IsDir() {
-			return "", fmt.Errorf("%w at %s from %s", ErrProjectRegistryNotFound, root, RootEnv)
+			return "", fmt.Errorf("%w at %s from %s", ErrProjectRegistryNotFound, root, source)
 		}
 		return root, nil
 	}

@@ -1,0 +1,9 @@
+{
+  "name": "lasso-hooks",
+  "version": "0.1.0",
+  "description": "Stateless Git and stable-checkout safety hooks for Lasso workspaces.",
+  "author": { "name": "dravengarden" },
+  "homepage": "https://github.com/dravengarden/lasso",
+  "repository": "https://github.com/dravengarden/lasso",
+  "keywords": ["codex", "claude-code", "grok", "git", "hooks", "workspace"]
+}

@@ -37,3 +37,10 @@ kind = "plugin"
 description = "Security scan skill pack (lightweight stub; extend in place)"
 path = "modules/security"
 skills = ["security-scan"]
+
+[[module]]
+id = "hooks"
+version = "0.1.0"
+kind = "plugin"
+description = "Stateless Git/worktree safety hooks for agent sessions"
+path = "modules/hooks"

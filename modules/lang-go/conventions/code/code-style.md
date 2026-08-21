@@ -69,6 +69,6 @@ substitute for the explicit task verification evidence.
 Carve-outs:
 
 - `cwd` inside `projects/` — each project has its own conventions
-- `cwd` outside `/home/draven/columbus` entirely
+- `cwd` outside the Lasso workspace root entirely
 - `git commit -m "$(cat <<'EOF' …)"` heredocs (commit-message text
   isn't shell code)

@@ -16,13 +16,18 @@ Instance-specific fleet docs (machines, business projects) do not live here.
 2. [`contracts/requirements.md`](contracts/requirements.md) — normative contract
 3. [`contracts/modules.md`](contracts/modules.md) — installable modules
 4. [`contracts/agent-runtimes.md`](contracts/agent-runtimes.md) — Codex / Claude / Grok
-5. [`guides/init.md`](guides/init.md) — creating a workspace
+5. [`design/columbus-on-lasso.md`](design/columbus-on-lasso.md) — instance migration contract
+6. [`guides/init.md`](guides/init.md) — creating a workspace
 
 ## Contracts
 
 - [`contracts/requirements.md`](contracts/requirements.md)
 - [`contracts/modules.md`](contracts/modules.md)
 - [`contracts/agent-runtimes.md`](contracts/agent-runtimes.md)
+
+## Design
+
+- [`design/columbus-on-lasso.md`](design/columbus-on-lasso.md)
 
 ## Guides
 

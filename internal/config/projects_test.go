@@ -7,6 +7,12 @@ import (
 	"testing"
 )
 
+func clearRootEnv(t *testing.T) {
+	t.Helper()
+	t.Setenv(RootEnv, "")
+	t.Setenv(LegacyRootEnv, "")
+}
+
 func writeRegistryFixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
@@ -28,6 +34,7 @@ func writeFixture(t *testing.T, path, body string) {
 }
 
 func TestLoadTOMLRegistry(t *testing.T) {
+	clearRootEnv(t)
 	root := writeRegistryFixture(t)
 	t.Chdir(filepath.Join(root, ProjectDefsDir, "alpha"))
 	registry, gotRoot, err := Load()
@@ -124,6 +131,7 @@ func TestCheckoutDirRejectsNestedLegacyProjectPath(t *testing.T) {
 }
 
 func TestMissingRegistry(t *testing.T) {
+	clearRootEnv(t)
 	root := t.TempDir()
 	t.Chdir(root)
 	if _, _, err := Load(); err == nil {
@@ -132,6 +140,7 @@ func TestMissingRegistry(t *testing.T) {
 }
 
 func TestLoadUsesConfiguredRootOutsideHarnessTree(t *testing.T) {
+	clearRootEnv(t)
 	root := writeRegistryFixture(t)
 	t.Setenv(RootEnv, root)
 	t.Chdir(t.TempDir())
@@ -146,6 +155,7 @@ func TestLoadUsesConfiguredRootOutsideHarnessTree(t *testing.T) {
 }
 
 func TestLoadRejectsInvalidConfiguredRoot(t *testing.T) {
+	clearRootEnv(t)
 	t.Setenv(RootEnv, t.TempDir())
 	if _, _, err := Load(); err == nil || !strings.Contains(err.Error(), RootEnv) {
 		t.Fatalf("Load error = %v, want configured-root error", err)

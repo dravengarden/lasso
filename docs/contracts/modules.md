@@ -36,13 +36,22 @@ lasso module remove <id> --yes
 - `lasso-add-module` / `lasso-remove-module` — guided install/remove
 - `lasso-add-language` — maps language names to `lang-*` modules
 
+## Built-in catalog highlights
+
+| Id | Kind | Notes |
+|---|---|---|
+| `docs-index` | capability | default on init |
+| `lang-go` / `lang-rust` / `lang-nix` | convention | language packs |
+| `security` | plugin | lightweight scan skill (stub) |
+| `hooks` | plugin | Git/worktree safety hooks (config-driven) |
+
 ## Authoring a module
 
 ```text
 modules/<id>/
   module.toml
   conventions/     # optional, merged into workspace
-  plugin/          # optional skills + dual manifests
+  plugin/          # optional skills + dual manifests (+ hooks/)
   scripts/         # optional helpers
 ```
 

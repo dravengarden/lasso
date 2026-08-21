@@ -27,8 +27,7 @@ and test gate in [the Julia code guidelines](code/julia/julia.md).
 
 These names are conventions, not Lasso schema. Project-specific skills may
 orchestrate additional workflows. Deployments remain under the owning project
-or host; Hawk service deployment and health belong to
-`machines/hawk/nixos` in an isolated Lasso worktree.
+or host configuration — never in the Lasso project registry.
 
 The `verify-change` skill selects the actual gate from `AGENTS.md` and project
 commands. A missing aggregate recipe is not treated as a successful skip.
