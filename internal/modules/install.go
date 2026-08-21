@@ -216,8 +216,31 @@ type marketplacePlugin struct {
 }
 
 func refreshMarketplaces(kitRoot, workspace string, lock *Lockfile) error {
-	plugins := []marketplacePlugin{
-		{
+	existingCodex := readMarketplace(filepath.Join(workspace, MarketplaceCodex))
+	existingClaude := readMarketplace(filepath.Join(workspace, MarketplaceClaude))
+
+	// Instance workspaces (e.g. Columbus) keep their marketplace identity and
+	// non-Lasso plugins. Lasso only owns lasso-core plus lasso-<module> entries.
+	name := "lasso"
+	iface := map[string]any{"displayName": "Lasso"}
+	if existingCodex != nil {
+		if existingCodex.Name != "" {
+			name = existingCodex.Name
+		}
+		if existingCodex.Interface != nil {
+			iface = existingCodex.Interface
+		}
+	}
+
+	plugins := preservedForeignPlugins(existingCodex, existingClaude)
+
+	// Prefer an instance harness plugin over vendoring a second skill tree.
+	instanceHarness := hasInstanceHarnessPlugin(workspace)
+	if !instanceHarness {
+		if err := ensureCorePlugin(kitRoot, workspace); err != nil {
+			return err
+		}
+		plugins = append(plugins, marketplacePlugin{
 			Name: "lasso-core",
 			Source: map[string]any{
 				"source": "local",
@@ -228,10 +251,9 @@ func refreshMarketplaces(kitRoot, workspace string, lock *Lockfile) error {
 				"authentication": "ON_INSTALL",
 			},
 			Category: "Developer Tools",
-		},
+		})
 	}
 
-	// Include installed modules that ship a plugin tree.
 	ids := make([]string, 0, len(lock.Modules))
 	for id := range lock.Modules {
 		ids = append(ids, id)
@@ -240,13 +262,11 @@ func refreshMarketplaces(kitRoot, workspace string, lock *Lockfile) error {
 	for _, id := range ids {
 		pluginDir := filepath.Join(InstalledPath(workspace, id), "plugin")
 		if info, err := os.Stat(pluginDir); err == nil && info.IsDir() {
-			// Materialize into workspace plugins/ for stable marketplace paths.
 			dest := filepath.Join(workspace, "plugins", "lasso-"+id)
 			_ = os.RemoveAll(dest)
 			if err := copyDir(pluginDir, dest); err != nil {
 				return fmt.Errorf("materialize plugin for %s: %w", id, err)
 			}
-			// Ensure dual manifests exist.
 			_ = ensurePluginManifests(dest, "lasso-"+id, lock.Modules[id])
 			plugins = append(plugins, marketplacePlugin{
 				Name: "lasso-" + id,
@@ -263,26 +283,65 @@ func refreshMarketplaces(kitRoot, workspace string, lock *Lockfile) error {
 		}
 	}
 
-	// Always ensure core plugin is present in workspace.
-	if err := ensureCorePlugin(kitRoot, workspace); err != nil {
-		return err
-	}
-
-	codex := marketplace{
-		Name: "lasso",
-		Interface: map[string]any{
-			"displayName": "Lasso",
-		},
-		Plugins: plugins,
-	}
-	claude := marketplace{
-		Name:    "lasso",
-		Plugins: plugins,
+	codex := marketplace{Name: name, Interface: iface, Plugins: plugins}
+	claude := marketplace{Name: name, Plugins: plugins}
+	if existingClaude != nil && existingClaude.Interface != nil {
+		claude.Interface = existingClaude.Interface
 	}
 	if err := writeJSON(filepath.Join(workspace, MarketplaceCodex), codex); err != nil {
 		return err
 	}
 	return writeJSON(filepath.Join(workspace, MarketplaceClaude), claude)
+}
+
+func readMarketplace(path string) *marketplace {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var market marketplace
+	if err := json.Unmarshal(data, &market); err != nil {
+		return nil
+	}
+	return &market
+}
+
+func isLassoManagedPlugin(name string) bool {
+	return name == "lasso-core" || strings.HasPrefix(name, "lasso-")
+}
+
+func preservedForeignPlugins(markets ...*marketplace) []marketplacePlugin {
+	seen := map[string]bool{}
+	var out []marketplacePlugin
+	for _, market := range markets {
+		if market == nil {
+			continue
+		}
+		for _, plugin := range market.Plugins {
+			if isLassoManagedPlugin(plugin.Name) || seen[plugin.Name] {
+				continue
+			}
+			seen[plugin.Name] = true
+			out = append(out, plugin)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
+}
+
+func hasInstanceHarnessPlugin(workspace string) bool {
+	// Columbus and similar instances already ship a harness plugin; avoid a
+	// duplicate skill tree from lasso-core until they retire the fork.
+	candidates := []string{
+		filepath.Join(workspace, "plugins", "columbus-harness"),
+		filepath.Join(workspace, "plugins", "harness-core"),
+	}
+	for _, path := range candidates {
+		if info, err := os.Stat(path); err == nil && info.IsDir() {
+			return true
+		}
+	}
+	return false
 }
 
 func ensureCorePlugin(kitRoot, workspace string) error {

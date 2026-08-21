@@ -34,6 +34,16 @@ Columbus (instance)
   AGENTS.md                        # routes to Lasso + fleet docs
 ```
 
+## Marketplace merge behavior
+
+`lasso module add` refreshes marketplace files but:
+
+- preserves an existing marketplace `name` / interface (e.g. `columbus`)
+- preserves non-`lasso-*` plugins (`columbus-harness`, …)
+- skips vendoring `lasso-core` when `plugins/columbus-harness` (or
+  `plugins/harness-core`) is already present, to avoid duplicate skill trees
+- still materializes additive module plugins such as `lasso-hooks`
+
 ## Compatibility bridge (transition)
 
 While Columbus migrates:
