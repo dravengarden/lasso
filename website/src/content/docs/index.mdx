@@ -3,87 +3,116 @@ title: Lasso
 description: An agent-native workspace layer for project identity, checkouts, worktrees, skills, and durable coordination.
 template: splash
 hero:
-  title: Rope your <span class="hero-title-accent">repositories</span> together.
-  tagline: An agent-native workspace layer for project identity, checkouts, worktrees, skills, and durable coordination.
+  title: '<span class="hero-kicker">LASSO / WORKSPACE KIT</span>Your repos.<br /><span class="hero-title-accent">In orbit.</span>'
+  tagline: A calm coordination layer for agents working across repositories.
   image:
     file: ../../assets/lasso-logo.png
     alt: Purple star wrapped with a golden lasso
   actions:
-    - text: Quick start
+    - text: Start roping
       link: /lasso/guides/quick-start/
       icon: right-arrow
       variant: primary
-    - text: GitHub
-      link: https://github.com/dravengarden/lasso
+    - text: Read the model
+      link: /lasso/concepts/overview/
       icon: external
       variant: minimal
 ---
 
 <div class="landing-page">
-  <section class="landing-thesis" aria-labelledby="thesis-title">
-    <div class="section-kicker">THE LAYER ABOVE THE BUILD SYSTEM</div>
-    <div class="thesis-grid">
-      <div>
-        <h2 id="thesis-title">Give every repository a place in the agent’s orbit.</h2>
-      </div>
-      <div class="thesis-copy">
-        <p>Lasso connects the parts an agent needs to work across repositories, while each project keeps its own language, build system, deployment rules, and ownership.</p>
-        <a class="text-link" href="/lasso/concepts/overview/">See the model <span aria-hidden="true">↗</span></a>
-      </div>
+  <div class="landing-signal" aria-label="What Lasso coordinates">
+    <span>PROJECT IDENTITY</span>
+    <i aria-hidden="true"></i>
+    <span>CHECKOUTS</span>
+    <i aria-hidden="true"></i>
+    <span>WORKTREES</span>
+    <i aria-hidden="true"></i>
+    <span>SKILLS</span>
+    <i aria-hidden="true"></i>
+    <span>HANDOFFS</span>
+  </div>
+
+  <section class="landing-intro" aria-labelledby="intro-title">
+    <div class="intro-copy">
+      <div class="section-kicker">01 / THE MISSING LAYER</div>
+      <h2 id="intro-title">Agents can reason about a repo. Lasso gives them a workspace.</h2>
+      <p>Lasso connects the pieces an agent needs to move across repositories, while every project keeps its own language, build system, deployment rules, and ownership.</p>
+      <a class="text-link" href="/lasso/concepts/overview/">See how it fits <span aria-hidden="true">↗</span></a>
     </div>
 
-    <div class="contract-rail" role="list" aria-label="Lasso ownership model">
-      <div class="contract-step" role="listitem">
-        <span class="step-number">01</span>
+    <div class="orbit-board" aria-label="Lasso ownership model">
+      <div class="orbit-ring orbit-ring--outer" aria-hidden="true"></div>
+      <div class="orbit-ring orbit-ring--inner" aria-hidden="true"></div>
+      <div class="orbit-line orbit-line--one" aria-hidden="true"></div>
+      <div class="orbit-line orbit-line--two" aria-hidden="true"></div>
+
+      <div class="orbit-node orbit-node--runtime">
+        <span class="node-index">01</span>
         <strong>Agent runtime</strong>
         <span>goals · plans · review</span>
       </div>
-      <div class="contract-connector" aria-hidden="true"></div>
-      <div class="contract-step contract-step--active" role="listitem">
-        <span class="step-number">02</span>
+      <div class="orbit-node orbit-node--lasso">
+        <span class="node-index">02</span>
         <strong>Lasso</strong>
         <span>repos · worktrees · skills</span>
       </div>
-      <div class="contract-connector" aria-hidden="true"></div>
-      <div class="contract-step" role="listitem">
-        <span class="step-number">03</span>
+      <div class="orbit-node orbit-node--project">
+        <span class="node-index">03</span>
         <strong>Project</strong>
         <span>build · test · deploy</span>
+      </div>
+
+      <div class="orbit-core">
+        <img src="/lasso/lasso-logo.png" alt="" loading="lazy" />
+        <strong>Lasso</strong>
+        <span>the workspace layer</span>
       </div>
     </div>
   </section>
 
-  <section class="landing-features" aria-labelledby="features-title">
+  <section class="landing-capabilities" aria-labelledby="capabilities-title">
     <div class="section-heading">
-      <div class="section-kicker">02 / CAPABILITIES</div>
-      <h2 id="features-title">A small, durable layer for a large workspace.</h2>
-      <p>Keep coordination visible and repeatable without turning the workspace into another build system.</p>
+      <div class="section-kicker">02 / WHAT LASSO OWNS</div>
+      <h2 id="capabilities-title">Make the workspace legible.</h2>
+      <p>Keep the coordination layer small, explicit, and durable. Let the agent runtime and each project do the work they already own.</p>
     </div>
 
-    <div class="feature-grid">
-      <article class="feature-card feature-card--featured">
-        <div class="feature-index">A</div>
-        <h3>Project registry</h3>
-        <p>Identity-only TOML entries make every repository discoverable without copying its toolchain into the workspace.</p>
+    <div class="capability-list">
+      <article class="capability-row">
+        <span class="capability-index">01</span>
+        <div>
+          <h3>Project registry</h3>
+          <p>Identity-only TOML entries make every repository discoverable without copying its toolchain into the workspace.</p>
+        </div>
         <code>project-defs/*.toml</code>
+        <span class="capability-arrow" aria-hidden="true">↗</span>
       </article>
-      <article class="feature-card">
-        <div class="feature-index">B</div>
-        <h3>Stable checkouts</h3>
-        <p>Bootstrap ordinary clones and create task worktrees with predictable paths, so agents can move with confidence.</p>
+      <article class="capability-row">
+        <span class="capability-index">02</span>
+        <div>
+          <h3>Stable checkouts</h3>
+          <p>Bootstrap ordinary clones and create task worktrees with predictable paths, so agents can move with confidence.</p>
+        </div>
         <code>lasso setup</code>
+        <span class="capability-arrow" aria-hidden="true">↗</span>
       </article>
-      <article class="feature-card">
-        <div class="feature-index">C</div>
-        <h3>Installable skills</h3>
-        <p>Package judgment-heavy workflows as modules that follow the Codex baseline and adapt cleanly to other runtimes.</p>
+      <article class="capability-row">
+        <span class="capability-index">03</span>
+        <div>
+          <h3>Installable skills</h3>
+          <p>Package judgment-heavy workflows as modules that follow the Codex baseline and adapt cleanly to other runtimes.</p>
+        </div>
         <code>lasso module add</code>
+        <span class="capability-arrow" aria-hidden="true">↗</span>
       </article>
-      <article class="feature-card">
-        <div class="feature-index">D</div>
-        <h3>Durable handoffs</h3>
-        <p>Keep cross-session coordination in work items while live goals, plans, and task state stay with the agent runtime.</p>
+      <article class="capability-row">
+        <span class="capability-index">04</span>
+        <div>
+          <h3>Durable handoffs</h3>
+          <p>Keep cross-session coordination in work items while live goals, plans, and task state stay with the agent runtime.</p>
+        </div>
         <code>work-items/</code>
+        <span class="capability-arrow" aria-hidden="true">↗</span>
       </article>
     </div>
   </section>
@@ -91,7 +120,7 @@ hero:
   <section class="landing-quickstart" aria-labelledby="quickstart-title">
     <div class="quickstart-copy">
       <div class="section-kicker">03 / FIRST ROPE</div>
-      <h2 id="quickstart-title">From clone to coordinated workspace in minutes.</h2>
+      <h2 id="quickstart-title">A workspace in one clean command.</h2>
       <p>Build the kit, initialize a workspace, then add the projects and modules your agents need.</p>
       <a class="landing-button landing-button--light" href="/lasso/guides/quick-start/">Read the quick start <span aria-hidden="true">→</span></a>
     </div>
@@ -100,12 +129,32 @@ hero:
         <span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span>
         <span>lasso / ready</span>
       </div>
-      <pre><code><span class="prompt">$</span> git clone github.com/dravengarden/lasso
-<span class="prompt">$</span> just build
-<span class="prompt">$</span> lasso init ~/my-fleet \
-    --runtime=codex,claude \
-    --module=lang-go
-<span class="success">✓ workspace ready</span></code></pre>
+      <pre><code><span class="prompt">$</span>{' lasso init ~/my-fleet --runtime=codex,claude --module=lang-go\n\n'}<span class="success">✓ workspace ready</span></code></pre>
+    </div>
+  </section>
+
+  <section class="landing-principles" aria-labelledby="principles-title">
+    <div class="section-heading section-heading--compact">
+      <div class="section-kicker">04 / THE CONTRACT</div>
+      <h2 id="principles-title">Thin by design.</h2>
+      <p>Lasso is useful because it knows where to stop.</p>
+    </div>
+    <div class="principle-grid">
+      <article class="principle-card">
+        <span>01</span>
+        <h3>Agent-first</h3>
+        <p>Codex remains the execution kernel; Lasso supplies the workspace context around it.</p>
+      </article>
+      <article class="principle-card">
+        <span>02</span>
+        <h3>Project-owned</h3>
+        <p>Builds, tests, deploys, secrets, and runtime state stay with the owning project.</p>
+      </article>
+      <article class="principle-card">
+        <span>03</span>
+        <h3>Composable</h3>
+        <p>Optional modules evolve independently and stay pinned in the workspace lockfile.</p>
+      </article>
     </div>
   </section>
 
