@@ -1,19 +1,19 @@
 <p align="center">
-  <img src="website/public/logo.svg" alt="Lasso" width="96" height="96" />
+  <img src="website/public/lasso-logo.png" alt="Lasso logo" width="150" height="150" />
 </p>
 
 <h1 align="center">Lasso</h1>
 
 <p align="center">
-  <strong>Agent-native monorepo workspace</strong><br/>
-  Rope repositories into one workspace for AI agents — without owning their build systems or task state.
+  <strong>Rope repositories into an agent-native workspace.</strong><br/>
+  A thin coordination layer for project identity, checkouts, worktrees, skills, and durable handoffs.
 </p>
 
 <p align="center">
-  <a href="https://dravengarden.github.io/lasso/"><img src="https://img.shields.io/badge/docs-dravengarden.github.io%2Flasso-0ea5e9?style=flat-square" alt="Docs" /></a>
+  <a href="https://dravengarden.github.io/lasso/"><img src="https://img.shields.io/badge/docs-dravengarden.github.io%2Flasso-7c3aed?style=flat-square" alt="Docs" /></a>
   <a href="https://github.com/dravengarden/lasso/actions/workflows/pages.yml"><img src="https://img.shields.io/github/actions/workflow/status/dravengarden/lasso/pages.yml?style=flat-square&label=docs" alt="Docs CI" /></a>
   <a href="https://github.com/dravengarden/lasso/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square" alt="License" /></a>
-  <a href="https://go.dev/"><img src="https://img.shields.io/badge/go-1.25+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go" /></a>
+  <a href="https://go.dev/"><img src="https://img.shields.io/badge/go-1.25+-f5bd27?style=flat-square&logo=go&logoColor=17122d" alt="Go" /></a>
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@
 
 ---
 
-## Why Lasso?
+## The layer above the build system
 
 Bazel, Buck, Nx, and Moon own **build graphs and task runners**.  
 Lasso owns the layer **above** that for the agent era:

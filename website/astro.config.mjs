@@ -11,8 +11,12 @@ export default defineConfig({
     starlight({
       title: 'Lasso',
       description:
-        'Agent-native monorepo workspace — rope repositories into one workspace for AI agents.',
-      favicon: '/favicon.svg',
+        'An agent-native workspace layer for project identity, checkouts, worktrees, skills, and durable coordination.',
+      logo: {
+        src: './src/assets/lasso-logo.png',
+        alt: 'Lasso logo',
+      },
+      favicon: '/favicon.png',
       social: [
         {
           icon: 'github',
