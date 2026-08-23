@@ -273,6 +273,10 @@ func refreshMarketplaces(kitRoot, workspace string, lock *Lockfile) error {
 				return fmt.Errorf("materialize plugin for %s: %w", id, err)
 			}
 			_ = ensurePluginManifests(dest, "lasso-"+id, lock.Modules[id])
+			category := "Developer Tools"
+			if id == "security" {
+				category = "Security"
+			}
 			plugins = append(plugins, marketplacePlugin{
 				Name: "lasso-" + id,
 				Source: map[string]any{
@@ -283,7 +287,7 @@ func refreshMarketplaces(kitRoot, workspace string, lock *Lockfile) error {
 					"installation":   "AVAILABLE",
 					"authentication": "ON_INSTALL",
 				},
-				Category: "Developer Tools",
+				Category: category,
 			})
 		}
 	}
