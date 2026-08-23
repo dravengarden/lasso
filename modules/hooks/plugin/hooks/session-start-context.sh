@@ -5,8 +5,15 @@ set -euo pipefail
 PATH="$PATH:/run/current-system/sw/bin:/usr/bin"
 
 # Prefer Lasso env; accept Columbus names during instance migration.
-config_path=${LASSO_CONFIG:-${COLUMBUS_CONFIG:-/etc/lasso/config.json}}
+config_path=${LASSO_CONFIG:-${COLUMBUS_CONFIG:-}}
 machine_id=${LASSO_MACHINE_ID:-${COLUMBUS_MACHINE_ID:-}}
+if [[ -z $config_path ]]; then
+    if [[ -r /etc/columbus/config.json ]]; then
+        config_path=/etc/columbus/config.json
+    else
+        config_path=/etc/lasso/config.json
+    fi
+fi
 host=${HOSTNAME:-$(uname -n 2>/dev/null || printf 'unknown')}
 
 if [[ -z $machine_id && -r $config_path ]] && command -v jq >/dev/null 2>&1; then

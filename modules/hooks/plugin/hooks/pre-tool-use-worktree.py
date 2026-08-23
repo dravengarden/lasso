@@ -53,11 +53,21 @@ def git(cwd: pathlib.Path, *args: str) -> str | None:
 
 
 def _config_path() -> pathlib.Path:
-    return pathlib.Path(
-        os.environ.get("LASSO_CONFIG")
-        or os.environ.get("COLUMBUS_CONFIG")
-        or "/etc/lasso/config.json"
-    )
+    for candidate in (
+        os.environ.get("LASSO_CONFIG"),
+        os.environ.get("COLUMBUS_CONFIG"),
+        "/etc/columbus/config.json",
+        "/etc/lasso/config.json",
+    ):
+        if not candidate:
+            continue
+        path = pathlib.Path(candidate)
+        if path.is_file() or candidate in (
+            os.environ.get("LASSO_CONFIG"),
+            os.environ.get("COLUMBUS_CONFIG"),
+        ):
+            return path
+    return pathlib.Path("/etc/lasso/config.json")
 
 
 @functools.cache

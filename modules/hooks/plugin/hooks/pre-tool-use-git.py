@@ -314,40 +314,57 @@ def git_risk(subcommand: str, args: Sequence[str]) -> str | None:
     return None
 
 
+def _config_path() -> pathlib.Path:
+    for candidate in (
+        os.environ.get("LASSO_CONFIG"),
+        os.environ.get("COLUMBUS_CONFIG"),
+        "/etc/columbus/config.json",
+        "/etc/lasso/config.json",
+    ):
+        if not candidate:
+            continue
+        path = pathlib.Path(candidate)
+        if path.is_file() or candidate in (
+            os.environ.get("LASSO_CONFIG"),
+            os.environ.get("COLUMBUS_CONFIG"),
+        ):
+            return path
+    return pathlib.Path("/etc/lasso/config.json")
+
+
 def _nixos_hosts() -> set[str]:
     """Hosts that opt into the committed-source NixOS transaction fence."""
-    config = pathlib.Path(
-        os.environ.get("LASSO_CONFIG")
-        or os.environ.get("COLUMBUS_CONFIG")
-        or "/etc/lasso/config.json"
-    )
     try:
-        data = json.loads(config.read_text())
+        data = json.loads(_config_path().read_text())
     except (OSError, ValueError):
         return set()
     machine = data.get("machine", {})
     if not isinstance(machine, dict):
         return set()
     hosts = machine.get("nixos_hosts", [])
-    if isinstance(hosts, list):
+    if isinstance(hosts, list) and hosts:
         return {item for item in hosts if isinstance(item, str) and item}
+    machine_id = machine.get("id")
+    if isinstance(machine_id, str) and machine_id:
+        return {machine_id}
     return set()
 
 
 def nixos_risk(command: str, args: Sequence[str]) -> str | None:
     machine = os.environ.get("LASSO_MACHINE_ID") or os.environ.get("COLUMBUS_MACHINE_ID", "")
     if not machine:
-        config = pathlib.Path(
-            os.environ.get("LASSO_CONFIG")
-            or os.environ.get("COLUMBUS_CONFIG")
-            or "/etc/lasso/config.json"
-        )
         try:
-            value = json.loads(config.read_text()).get("machine", {}).get("id")
+            value = json.loads(_config_path().read_text()).get("machine", {}).get("id")
             machine = value if isinstance(value, str) else ""
         except (OSError, ValueError):
             machine = ""
-    if not machine or machine not in _nixos_hosts():
+    hosts = _nixos_hosts()
+    if not machine:
+        return None
+    # Env-only identity (tests / minimal hosts) opts the current machine in.
+    if not hosts:
+        hosts = {machine}
+    if machine not in hosts:
         return None
     if command == "nixos-rebuild" and any(
         argument in {"boot", "build", "switch", "test"} for argument in args
