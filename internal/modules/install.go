@@ -56,6 +56,11 @@ func Add(kitRoot, workspace, id string) (*AddResult, error) {
 			return nil, err
 		}
 		if lock.Modules[id] == mod.Version {
+			// Still refresh marketplaces/core so instance skill migrations
+			// (e.g. enabling lasso-core) apply without bumping module versions.
+			if err := refreshMarketplaces(kitRoot, workspace, lock); err != nil {
+				return nil, err
+			}
 			return &AddResult{ID: id, Version: mod.Version, Path: dst, State: "already"}, nil
 		}
 		if err := os.RemoveAll(dst); err != nil {
