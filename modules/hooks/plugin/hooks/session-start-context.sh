@@ -77,9 +77,14 @@ if [[ -n $machine_id && -r $deployment_revision_file ]]; then
 fi
 
 # Optional NixOS host set from config: machine.nixos_hosts = ["…"]
+# If nixos_hosts is absent, the current machine.id opts itself in.
 nixos_hint=false
-if [[ -r $config_path ]] && command -v jq >/dev/null 2>&1; then
-    if [[ -n $machine_id ]] && jq -e --arg id "$machine_id" '.machine.nixos_hosts // [] | index($id) != null' "$config_path" >/dev/null 2>&1; then
+if [[ -n $machine_id && -r $config_path ]] && command -v jq >/dev/null 2>&1; then
+    if jq -e --arg id "$machine_id" '
+        (.machine.nixos_hosts // [(.machine.id // empty)])
+        | map(select(length > 0))
+        | index($id) != null
+      ' "$config_path" >/dev/null 2>&1; then
         nixos_hint=true
     fi
 fi
@@ -88,6 +93,15 @@ if [[ $nixos_hint == true ]]; then
 fi
 
 resolve_workspace_root() {
+    # Explicit config wins over ambient LASSO_ROOT/COLUMBUS_ROOT so tests and
+    # host config.json can pin the stable checkout without env leakage.
+    if [[ -r $config_path ]] && command -v jq >/dev/null 2>&1; then
+        configured_root=$(jq -r '.paths.root // empty' "$config_path" 2>/dev/null || true)
+        if [[ -n $configured_root ]]; then
+            printf '%s\n' "$configured_root"
+            return
+        fi
+    fi
     if [[ -n ${LASSO_ROOT:-} ]]; then
         printf '%s\n' "$LASSO_ROOT"
         return
@@ -95,13 +109,6 @@ resolve_workspace_root() {
     if [[ -n ${COLUMBUS_ROOT:-} ]]; then
         printf '%s\n' "$COLUMBUS_ROOT"
         return
-    fi
-    if [[ -r $config_path ]] && command -v jq >/dev/null 2>&1; then
-        configured_root=$(jq -r '.paths.root // empty' "$config_path" 2>/dev/null || true)
-        if [[ -n $configured_root ]]; then
-            printf '%s\n' "$configured_root"
-            return
-        fi
     fi
     # Walk up from the current repo for project-defs/registry.toml.
     dir=$repo
