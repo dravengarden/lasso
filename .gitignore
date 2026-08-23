@@ -6,3 +6,6 @@
 website/node_modules/
 website/dist/
 website/.astro/
+__pycache__/
+*.py[cod]
+.venv/
