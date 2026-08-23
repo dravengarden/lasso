@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+plugin_root="$(cd "$scripts_dir/.." && pwd)"
+
+if ! command -v uv >/dev/null 2>&1; then
+    if [[ ${COLUMBUS_SECURITY_TOOLCHAIN_BOOTSTRAPPED:-} == 1 ]]; then
+        printf 'Lasso Security toolchain is missing uv after nix develop.\n' >&2
+        exit 1
+    fi
+    if ! command -v nix >/dev/null 2>&1; then
+        printf 'Lasso Security requires Nix to provide uv.\n' >&2
+        exit 1
+    fi
+    exec nix develop "$plugin_root" -c env COLUMBUS_SECURITY_TOOLCHAIN_BOOTSTRAPPED=1 "$scripts_dir/security-report" "$@"
+fi
+
+exec uv run --project "$scripts_dir/agent_tools" security-report "$@"

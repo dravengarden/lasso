@@ -1,0 +1,306 @@
+{# Jinja2 template for the HTML security-scan report.
+
+Context variables:
+  today                  : str             ISO date
+  unified                : list[UnifiedRow]
+  confs_by_key           : dict[key, list[Confirmation]]
+  tools_manifest         : ToolsManifest
+  summary                : {total, sev_counts, actionable, verdict_counts, confirmed_total}
+  by_project             : dict[str, list[UnifiedRow]]   (sorted)
+  audit_trail            : list[Confirmation]            (chronological)
+  helpers                : namespace with severity_class, effective_verdict, fix_for, scanner_short, advisory_url
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Security scan report — {{ today }}</title>
+<style>
+:root {
+  --bg: #fafafa; --fg: #111; --muted: #555; --accent: #1d4ed8;
+  --crit: #b91c1c; --high: #ea580c; --mod: #ca8a04; --low: #16a34a; --unk: #6b7280;
+  --row-alt: #f3f4f6; --border: #d1d5db; --card-bg: #ffffff;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  margin: 0; padding: 2rem; background: var(--bg); color: var(--fg);
+  font-size: 14px; line-height: 1.5;
+}
+h1 { font-size: 1.8rem; margin: 0 0 .25rem; }
+h1 + .meta { color: var(--muted); font-size: 13px; margin-bottom: 1.5rem; }
+h2 { font-size: 1.3rem; margin: 2rem 0 .8rem;
+  border-bottom: 1px solid var(--border); padding-bottom: .3rem; }
+h3 { font-size: 1.05rem; margin: 1.5rem 0 .5rem; font-family: ui-monospace, monospace; }
+nav.toc {
+  background: var(--card-bg); border: 1px solid var(--border);
+  padding: 1rem 1.2rem; border-radius: 6px; margin: 0 0 1.5rem;
+}
+nav.toc a { color: var(--accent); text-decoration: none; margin-right: .8rem; }
+nav.toc a:hover { text-decoration: underline; }
+.summary { background: var(--card-bg); border: 1px solid var(--border);
+  padding: 1rem 1.2rem; border-radius: 6px; margin-bottom: 1.5rem; }
+.summary ul { margin: 0; padding-left: 1.2rem; }
+.summary li { margin: .25rem 0; }
+table { border-collapse: collapse; width: 100%; margin: .5rem 0 1rem; font-size: 13px; }
+th { background: #e5e7eb; text-align: left; padding: .4rem .6rem; font-weight: 600;
+  border-bottom: 2px solid var(--border); }
+td { padding: .35rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:nth-child(even) td { background: var(--row-alt); }
+.badge { display: inline-block; padding: .1rem .55rem; border-radius: .25rem;
+  font-weight: 600; font-size: 11px; color: white; white-space: nowrap; }
+.sev-crit { background: var(--crit); }
+.sev-high { background: var(--high); }
+.sev-mod  { background: var(--mod); }
+.sev-low  { background: var(--low); }
+.sev-unk  { background: var(--unk); }
+.scanner-count { font-family: ui-monospace, monospace; font-size: 12px; color: var(--muted); }
+.pkg { font-family: ui-monospace, monospace; font-weight: 600; }
+.ver { font-family: ui-monospace, monospace; color: var(--muted); }
+.refs a { color: var(--accent); text-decoration: none; margin-right: .4rem;
+  font-family: ui-monospace, monospace; font-size: 12px; }
+.refs a:hover { text-decoration: underline; }
+.verdict-real { color: var(--crit); font-weight: 600; }
+.verdict-false-positive { color: var(--low); text-decoration: line-through; }
+.verdict-fixed { color: var(--low); font-weight: 600; }
+.verdict-accepted-risk { color: var(--mod); }
+.verdict-superseded { color: var(--unk); font-style: italic; }
+.verdict-empty { color: var(--muted); font-style: italic; }
+.fix { color: var(--fg); }
+details.project-block { background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 6px; margin: 1rem 0; padding: 0; }
+details.project-block summary {
+  cursor: pointer; padding: .8rem 1.2rem; font-weight: 600;
+  font-family: ui-monospace, monospace; font-size: 1rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+details.project-block summary:hover { background: var(--row-alt); }
+details.project-block[open] summary { border-bottom: 1px solid var(--border); }
+details.project-block .body { padding: 0 1.2rem 1rem; }
+.proj-stats { font-weight: normal; font-size: 13px; }
+footer {
+  margin-top: 3rem; padding-top: 1rem;
+  border-top: 1px solid var(--border); color: var(--muted); font-size: 12px;
+}
+.empty { color: var(--muted); font-style: italic; }
+.notes { color: var(--muted); font-size: 12px; max-width: 480px; }
+</style>
+</head>
+<body>
+
+<h1>Security scan report</h1>
+<div class="meta">
+  Generated {{ today }} by the
+  <code>security-scan</code> skill. Raw scanner data lives in <code>raw/</code>;
+  confirmations are append-only in <code>confirmations.jsonl</code>. Re-rendering
+  never touches either.
+</div>
+
+<div class="summary">
+<h2 style="margin-top:0">Summary</h2>
+<ul>
+  <li><b>Total unique findings</b>: {{ summary.total }}</li>
+  <li><b>By severity</b>:
+    {% for sev in ['CRITICAL', 'HIGH', 'MODERATE', 'LOW', 'UNKNOWN'] %}
+      {% if summary.sev_counts.get(sev, 0) %}
+        <span class="badge {{ helpers.severity_class(sev) }}">{{ sev }}</span>
+        {{ summary.sev_counts[sev] }}{% if not loop.last %} &nbsp; {% endif %}
+      {% endif %}
+    {% endfor %}
+  </li>
+  <li><b>Actionable</b> (CRITICAL+HIGH not yet ruled FP/fixed): <b>{{ summary.actionable }}</b></li>
+  {% if summary.confirmed_total %}
+    <li><b>Confirmation status</b>:
+      {{ summary.confirmed_total }} reviewed
+      ({% for v in ['real','false-positive','fixed','accepted-risk','superseded'] %}{% if summary.verdict_counts.get(v, 0) %}{{ v }}={{ summary.verdict_counts[v] }}{% if not loop.last %}, {% endif %}{% endif %}{% endfor %});
+      {{ summary.total - summary.confirmed_total }} unreviewed
+    </li>
+  {% else %}
+    <li><b>Confirmation status</b>: 0 reviewed (run Phase 2 to double-confirm)</li>
+  {% endif %}
+</ul>
+</div>
+
+<h2>Tools used</h2>
+<p>
+  Up to {{ scanner_total }} independent scanners with overlapping data sources
+  produced verified output in this run. Compatible coverage varies by project,
+  and each finding's denominator uses that project's actual output. Three or
+  more independent hits are strong evidence; single-scanner findings get
+  Phase-2 agent review.
+</p>
+<table class="tools-table">
+<thead><tr><th>Tool</th><th>Version</th><th>Vulnerability database</th><th>Ecosystem</th></tr></thead>
+<tbody>
+{% for name, t in tools_manifest.tools.items() %}
+    <tr>
+      <td><b>{{ name }}</b></td>
+      <td><code>{{ t.version }}</code></td>
+      <td>{{ t.vuln_db }}</td>
+      <td>{{ t.ecosystem }}</td>
+    </tr>
+{% endfor %}
+</tbody>
+</table>
+{% if tools_manifest.projects_scanned %}
+<p><b>Projects scanned</b> ({{ tools_manifest.projects_scanned|length }}):
+{% for p in tools_manifest.projects_scanned %}<code>{{ p }}</code>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+<table class="tools-table">
+<thead><tr><th>Project</th><th>Verified scanner outputs</th></tr></thead>
+<tbody>
+{% for p in tools_manifest.projects_scanned %}
+  <tr>
+    <td><code>{{ p }}</code></td>
+    <td>{% for scanner in tools_manifest.scanners_for_project(p) %}<code>{{ scanner }}</code>{% if not loop.last %}, {% endif %}{% endfor %}</td>
+  </tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+{% if tools_manifest.scanned_at and tools_manifest.scanned_at != '(unknown)' %}
+<p><b>Scan timestamp</b>: <code>{{ tools_manifest.scanned_at }}</code></p>
+{% endif %}
+
+<div class="card warning">
+  <b>Supply-chain attacks live in a separate report</b>:
+  see <code>XRAY.md</code> / <a href="xray.html"><code>xray.html</code></a>
+  alongside this file. Those have their own remediation flow
+  (isolate-before-rotate, dead-man-switch awareness).
+</div>
+
+{% if conflict_count %}
+<h2 id="conflicts">⚠ Agent verdict conflicts ({{ conflict_count }})</h2>
+<p>
+  Different agents disagree on these findings. Adjudicate before
+  treating the corresponding row in <i>Findings by project</i> as
+  resolved.
+</p>
+<table>
+<thead><tr>
+  <th>Severity</th><th>Project</th><th>Package</th><th>Version</th>
+  <th>Cluster</th><th>Verdicts</th>
+</tr></thead>
+<tbody>
+{% for row, verdicts in conflicts %}
+  <tr>
+    <td>{{ helpers.severity_class(row.severity) }} {{ row.severity }}</td>
+    <td><code>{{ row.project }}</code></td>
+    <td class="pkg">{{ row.package }}</td>
+    <td class="ver">{{ row.version }}</td>
+    <td>{{ row.cluster_id }}</td>
+    <td>
+      {% for agent, v in verdicts.items() %}
+        <b>{{ agent }}</b>: <span class="verdict-{{ v }}">{{ v }}</span>{% if not loop.last %}; {% endif %}
+      {% endfor %}
+    </td>
+  </tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+
+<h2 id="findings">Findings by project</h2>
+{% if by_project %}
+<nav class="toc">
+  <b>Jump to:</b>
+  {% if conflict_count %}<a href="#conflicts">Conflicts</a>{% endif %}
+  {% for proj in by_project.keys() %}
+    <a href="#proj-{{ proj }}">{{ proj }}</a>
+  {% endfor %}
+</nav>
+{% endif %}
+
+{% for proj, rows in by_project.items() %}
+  {% set sev_counts = helpers.project_sev_counts(rows) %}
+  {% set actionable = helpers.project_actionable(rows, confs_by_key) %}
+  <details class="project-block" {% if actionable > 0 %}open{% endif %} id="proj-{{ proj }}">
+    <summary>
+      <span><code>{{ proj }}</code></span>
+      <span class="proj-stats">
+        {% for sev in ['CRITICAL', 'HIGH', 'MODERATE', 'LOW', 'UNKNOWN'] %}
+          {% if sev_counts.get(sev, 0) %}
+            <span class="badge {{ helpers.severity_class(sev) }}">{{ sev }}</span>&nbsp;{{ sev_counts[sev] }}&nbsp;
+          {% endif %}
+        {% endfor %}
+        · <b>{{ actionable }}</b> actionable
+      </span>
+    </summary>
+    <div class="body">
+    <table>
+    <thead><tr>
+      <th>Sev</th><th>Package</th><th>Version</th><th>Scanners</th>
+      <th>Confirmed by</th><th>Verdict</th><th>Fix / Summary</th><th>Refs</th>
+    </tr></thead>
+    <tbody>
+    {% for r in rows %}
+      {% set confs = confs_by_key.get(helpers.row_key(r), []) %}
+      {% set verdict = helpers.effective_verdict(confs) %}
+      <tr>
+        <td><span class="badge {{ helpers.severity_class(r.severity) }}">{{ r.severity }}</span></td>
+        <td class="pkg">{{ r.package }}</td>
+        <td class="ver">{{ r.version }}</td>
+        <td class="scanner-count">
+          {{ r.scanner_count }}/{{ scanner_total_for(r.project) }}
+          [{% for s in r.scanners %}{{ helpers.scanner_short(s) }}{% if not loop.last %},{% endif %}{% endfor %}]
+        </td>
+        <td>
+          {% if confs %}
+            {{ confs | map(attribute='agent_runtime') | unique | sort | join(', ') }}
+          {% else %}
+            <span class="verdict-empty">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if verdict %}
+            <span class="verdict-{{ verdict }}">{{ verdict }}</span>
+          {% else %}
+            <span class="verdict-empty">—</span>
+          {% endif %}
+        </td>
+        <td class="fix">{{ helpers.fix_for(r, confs) }}</td>
+        <td class="refs">
+          {% for vid in r.all_ids[:3] %}
+            <a href="{{ helpers.advisory_url(vid) }}" target="_blank">{{ vid }}</a>
+          {% endfor %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+    </div>
+  </details>
+{% else %}
+  <p class="empty">No projects had any findings — clean across the board.</p>
+{% endfor %}
+
+{% if audit_trail %}
+<h2 id="audit-trail">Confirmation audit trail</h2>
+<p>Append-only record. Each row = one verdict written to <code>confirmations.jsonl</code>.</p>
+<table>
+<thead><tr>
+  <th>When</th><th>Agent</th><th>Project</th><th>Package</th><th>Version</th>
+  <th>Cluster</th><th>Verdict</th><th>Notes</th>
+</tr></thead>
+<tbody>
+{% for c in audit_trail %}
+  <tr>
+    <td>{{ c.confirmed_at }}</td>
+    <td>{{ c.agent_id() }}</td>
+    <td>{{ c.project }}</td>
+    <td class="pkg">{{ c.package }}</td>
+    <td class="ver">{{ c.version }}</td>
+    <td>{{ c.cluster_id }}</td>
+    <td><span class="verdict-{{ c.verdict }}">{{ c.verdict }}</span></td>
+    <td class="notes">{{ (c.notes or '')[:200] }}</td>
+  </tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+
+<footer>
+  Findings are deduplicated by alias chain (GHSA ↔ CVE ↔ PYSEC ↔ MAL).
+  Severity is the highest reported by any scanner that detected the finding.
+</footer>
+</body>
+</html>

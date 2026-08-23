@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+plugin_root="$(cd "$scripts_dir/.." && pwd)"
+
+if ! command -v uv >/dev/null 2>&1; then
+    if [[ ${COLUMBUS_MEMORY_TOOLCHAIN_BOOTSTRAPPED:-} == 1 ]]; then
+        printf 'Lasso Memory toolchain is incomplete after nix develop: uv\n' >&2
+        exit 1
+    fi
+    if ! command -v nix >/dev/null 2>&1; then
+        printf 'Lasso Memory requires Nix to provide uv\n' >&2
+        exit 1
+    fi
+    exec nix develop "$plugin_root" -c env COLUMBUS_MEMORY_TOOLCHAIN_BOOTSTRAPPED=1 "$scripts_dir/memory-sync" "$@"
+fi
+
+exec uv run --project "$scripts_dir/agent_tools" memory-sync "$@"

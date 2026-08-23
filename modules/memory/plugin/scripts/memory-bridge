@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# memory-bridge: share durable memory CONTENT between isolated runtime homes
+# while keeping each runtime's configuration isolated.
+#
+# Codex  : OpenAI home (~/.codex) <-> DeepSeek provider home.
+#          Copies extensions/ad_hoc/notes/*.md in both directions. Rollout
+#          summaries bootstrap only: they are copied into a store that has no
+#          compiled MEMORY.md yet (fresh bootstrap) and never re-copied once
+#          consolidation exists, because consolidation consumes and prunes
+#          them (forgetting). Notes that were "translated by the Columbus or Lasso
+#          Memory plugin" are not copied back to the ordinary home (loop
+#          guard).
+# Claude Code owns a separate native fact store. This bridge must not copy,
+# reconcile, or rebuild it.
+#
+# Safety: additive only (no deletes, no clobber), idempotent, flock-serialized.
+# Usage:  memory-bridge [--write] [--propagate-updates] [--rollouts=auto|always]
+#         (default is a dry run; rollouts default to bootstrap-only)
+set -euo pipefail
+
+CODEX_A="${CODEX_A:-$HOME/.codex}"
+CODEX_B="${CODEX_B:-$HOME/.local/state/cowboy/providers/codex-deepseek/codex-home}"
+LOCK_DIR="${LOCK_DIR:-$HOME/.cache/lasso-memory/bridge-locks}"
+
+WRITE=0
+PROPAGATE=0
+ROLLOUTS=auto
+for arg in "$@"; do
+    case "$arg" in
+        --write) WRITE=1 ;;
+        --propagate-updates) PROPAGATE=1 ;;
+        --rollouts=auto | --rollouts=always) ROLLOUTS="${arg#--rollouts=}" ;;
+        --dry-run) ;;
+        *)
+            printf 'usage: %s [--write] [--propagate-updates] [--rollouts=auto|always]\n' "$0" >&2
+            exit 2
+            ;;
+    esac
+done
+
+mkdir -p "$LOCK_DIR"
+say() { printf '%s\n' "$*"; }
+
+copy_new() {
+    local src="$1" dst="$2" label="$3" guard="${4:-}"
+    [ -d "$src" ] || return 0
+    mkdir -p "$dst"
+    local f base
+    for f in "$src"/*.md; do
+        [ -e "$f" ] || continue
+        base="$(basename "$f")"
+        [ "$base" = "MEMORY.md" ] && continue
+        if [ "$guard" = "--loop-guard" ] && grep -Eq 'translated by the (Columbus|Lasso) Memory plugin' "$f"; then
+            continue
+        fi
+        if [ ! -e "$dst/$base" ]; then
+            if [ "$WRITE" = 1 ]; then
+                cp -p "$f" "$dst/$base"
+                say "copied   $label/$base"
+            else
+                say "would copy $label/$base"
+            fi
+        fi
+    done
+}
+
+note_difference() {
+    local label="$1" base="$2"
+    say "differs  $label/$base (same name, different content; not propagated)"
+}
+
+note_hash() {
+    # A translated note carries provenance in the destination store. That
+    # bridge-owned line is metadata, not a semantic update to propagate back.
+    awk '
+        /^- Recorded by [^;]+; translated by the (Columbus|Lasso) Memory plugin\.$/ { next }
+        { lines[NR] = $0; last = NR }
+        END {
+            while (last > 0 && lines[last] == "") last--
+            for (line_number = 1; line_number <= last; line_number++) print lines[line_number]
+        }
+    ' "$1" | sha256sum | cut -d' ' -f1
+}
+
+# Rollout summaries are transient inputs: consolidation consumes and prunes
+# them. Copy them only into a store that has never consolidated (no compiled
+# MEMORY.md), or when --rollouts=always forces a re-bootstrap.
+rollout_ready() {
+    local dst="$1" parent
+    [ "$ROLLOUTS" = always ] && return 0
+    parent="$(dirname "$dst")"
+    if [ -f "$parent/MEMORY.md" ]; then
+        say "skip     codex:rollout -> $(basename "$parent") (already consolidated; notes carry durable facts)"
+        return 1
+    fi
+    return 0
+}
+
+exec 9>"$LOCK_DIR/bridge.lock"
+flock 9
+
+say "== Codex rollout summaries =="
+if rollout_ready "$CODEX_B/memories/rollout_summaries"; then
+    copy_new "$CODEX_A/memories/rollout_summaries" "$CODEX_B/memories/rollout_summaries" "codex:rollout"
+fi
+if rollout_ready "$CODEX_A/memories/rollout_summaries"; then
+    copy_new "$CODEX_B/memories/rollout_summaries" "$CODEX_A/memories/rollout_summaries" "codex:rollout"
+fi
+if [ "$PROPAGATE" = 1 ]; then
+    for f in "$CODEX_A"/memories/rollout_summaries/*.md; do
+        [ -e "$f" ] || continue
+        base="$(basename "$f")"
+        [ -e "$CODEX_B/memories/rollout_summaries/$base" ] || continue
+        sa="$(sha256sum "$f" | cut -d' ' -f1)"
+        sb="$(sha256sum "$CODEX_B/memories/rollout_summaries/$base" | cut -d' ' -f1)"
+        [ "$sa" = "$sb" ] || note_difference "codex:rollout" "$base"
+    done
+fi
+
+say "== Codex ad-hoc notes =="
+copy_new "$CODEX_A/memories/extensions/ad_hoc/notes" "$CODEX_B/memories/extensions/ad_hoc/notes" "codex:notes"
+copy_new "$CODEX_B/memories/extensions/ad_hoc/notes" "$CODEX_A/memories/extensions/ad_hoc/notes" "codex:notes" --loop-guard
+if [ "$PROPAGATE" = 1 ]; then
+    for f in "$CODEX_A"/memories/extensions/ad_hoc/notes/*.md; do
+        [ -e "$f" ] || continue
+        base="$(basename "$f")"
+        [ -e "$CODEX_B/memories/extensions/ad_hoc/notes/$base" ] || continue
+        sa="$(note_hash "$f")"
+        sb="$(note_hash "$CODEX_B/memories/extensions/ad_hoc/notes/$base")"
+        [ "$sa" = "$sb" ] || note_difference "codex:notes" "$base"
+    done
+fi
+
+say "== done =="

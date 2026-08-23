@@ -1,0 +1,17 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+format-check:
+    cd scripts/agent_tools && uv run ruff format --check .
+    shfmt -d -i 4 -ci -bn scripts/security-scan scripts/security-report
+
+lint:
+    cd scripts/agent_tools && uv run ruff check . && uv run ty check .
+    shellcheck scripts/security-scan scripts/security-report
+
+test:
+    cd scripts/agent_tools && uv run --group dev pytest
+
+verify: format-check lint test

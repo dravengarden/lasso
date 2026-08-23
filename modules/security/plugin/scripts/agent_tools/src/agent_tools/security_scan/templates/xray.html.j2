@@ -1,0 +1,214 @@
+{# Supply-chain attack report (xray.html) — same context as xray.md.j2. #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Supply-chain attack report — {{ today }}</title>
+<style>
+:root {
+  --bg: #fafafa; --fg: #111; --muted: #555; --accent: #1d4ed8;
+  --crit: #b91c1c; --high: #ea580c; --mod: #ca8a04; --low: #16a34a;
+  --row-alt: #f3f4f6; --border: #d1d5db; --card-bg: #ffffff;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  margin: 0; padding: 2rem; background: var(--bg); color: var(--fg);
+  font-size: 14px; line-height: 1.5; max-width: 1100px;
+}
+h1 { font-size: 1.8rem; margin: 0 0 .25rem; }
+h2 { font-size: 1.3rem; margin: 2rem 0 .8rem;
+  border-bottom: 1px solid var(--border); padding-bottom: .3rem; }
+h3 { font-size: 1.05rem; margin: 1.5rem 0 .5rem; }
+.meta { color: var(--muted); font-size: 13px; margin-bottom: 1.5rem; }
+.card { background: var(--card-bg); border: 1px solid var(--border);
+  padding: 1rem 1.2rem; border-radius: 6px; margin: 1rem 0; }
+.danger  { border-left: 4px solid var(--crit); }
+.warning { border-left: 4px solid var(--high); }
+.success { border-left: 4px solid var(--low); }
+code { font-family: ui-monospace, monospace; background: #e5e7eb;
+  padding: .1rem .35rem; border-radius: 3px; font-size: 12.5px; }
+table { border-collapse: collapse; width: 100%; margin: .5rem 0 1rem; font-size: 13px; }
+th { background: #e5e7eb; text-align: left; padding: .4rem .6rem; font-weight: 600;
+  border-bottom: 2px solid var(--border); position: sticky; top: 0; }
+td { padding: .35rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:nth-child(even) td { background: var(--row-alt); }
+.pkg { font-family: ui-monospace, monospace; font-weight: 600; }
+.ver { font-family: ui-monospace, monospace; color: var(--muted); }
+.badge { display: inline-block; padding: .1rem .55rem; border-radius: .25rem;
+  font-weight: 600; font-size: 11px; color: white; white-space: nowrap; }
+.sev-crit { background: var(--crit); }
+.sev-high { background: var(--high); }
+.sev-mod  { background: var(--mod); }
+.sev-low  { background: var(--low); }
+nav.toc {
+  background: var(--card-bg); border: 1px solid var(--border);
+  padding: .8rem 1.2rem; border-radius: 6px; margin: 0 0 1.5rem; font-size: 13px;
+}
+nav.toc a { color: var(--accent); text-decoration: none; margin-right: .8rem; }
+nav.toc a:hover { text-decoration: underline; }
+footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border);
+  color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>Supply-chain attack report</h1>
+<div class="meta">
+  Generated {{ today }} by the <code>security-scan</code> skill.
+  Distinct from <a href="report.html"><code>report.html</code></a>
+  (CVE/GHSA in legitimate code). Supply-chain attacks bypass CVSS, use
+  install scripts as delivery, and frequently ship destructive secondary
+  payloads (dead-man switches, credential theft).
+  <b>Treat every exact match as CRITICAL until reviewed.</b>
+</div>
+
+<nav class="toc">
+  <b>Jump to:</b>
+  <a href="#feeds">IOC feeds</a>
+  <a href="#exact">Exact hits</a>
+  <a href="#partial">Name-only matches</a>
+  <a href="#campaigns">Per-campaign reports</a>
+</nav>
+
+<h2 id="feeds">IOC feeds loaded</h2>
+{% if ioc_campaigns %}
+<ul>
+{% for c in ioc_campaigns %}
+  <li>
+    <code>{{ c.campaign }}</code> — published {{ c.published_at }}<br>
+    source: <a href="{{ c.source }}" target="_blank">{{ c.source }}</a><br>
+    ingested: {{ c.ingested_at }}
+  </li>
+{% endfor %}
+</ul>
+{% else %}
+<div class="card">
+  <em>(No IOC feeds loaded — drop a JSON file into
+  the plugin's bundled IOC data and re-render.)</em>
+</div>
+{% endif %}
+
+{% if tools_manifest.projects_scanned %}
+<p>
+  <b>Projects scanned</b> ({{ tools_manifest.projects_scanned|length }}):
+  {% for p in tools_manifest.projects_scanned %}<code>{{ p }}</code>{% if not loop.last %}, {% endif %}{% endfor %}
+</p>
+{% endif %}
+
+{% set exact_matches = ioc_matches | selectattr('match_kind', 'equalto', 'exact') | list %}
+{% set partial_matches = ioc_matches | selectattr('match_kind', 'equalto', 'name-only') | list %}
+
+<h2 id="exact">Exact hits ({{ exact_matches | length }})</h2>
+{% if exact_matches %}
+<div class="card danger">
+  <span class="badge sev-crit">{{ exact_matches | length }} CONFIRMED MALICIOUS RELEASE(S) IN USE</span>
+</div>
+<table>
+<thead><tr>
+  <th>Project</th><th>Package</th><th>Version</th><th>Ecosystem</th>
+  <th>Detected by</th><th>Where</th><th>Campaign</th><th>XrayID</th>
+</tr></thead>
+<tbody>
+{% for m in exact_matches %}
+  <tr>
+    <td><code>{{ m.project }}</code></td>
+    <td class="pkg">{{ m.package }}</td>
+    <td class="ver">{{ m.version }}</td>
+    <td>{{ m.ecosystem }}</td>
+    <td>
+      {% if m.detected_by_scanner %}
+        <span class="badge sev-mod">scanner</span>
+      {% else %}
+        <span class="badge sev-high">lockfile-only</span>
+      {% endif %}
+    </td>
+    <td>{{ m.where }}</td>
+    <td>{{ m.campaign }}</td>
+    <td><code>{{ m.xray_id }}</code></td>
+  </tr>
+{% endfor %}
+</tbody>
+</table>
+<div class="card danger">
+  <b>Remediation</b> (per Shai-Hulud guidance, applies to every exact match):
+  <ol>
+    <li><b>Isolate the host BEFORE rotating credentials</b> — many supply-chain payloads include a dead-man switch (<code>rm -rf ~/</code> on token revocation).</li>
+    <li>Stop / remove persistence: <code>systemctl disable --now gh-token-monitor.service pgsql-monitor.service</code></li>
+    <li><code>npm uninstall</code> / <code>pip uninstall</code> the matched versions</li>
+    <li>Rotate: GitHub tokens, npm tokens, AWS / GCP / Azure creds (IMDSv2 + ECS + SSM), Kubernetes service accounts, HashiCorp Vault tokens, SSH keys, Docker auth, password manager exports</li>
+    <li>Block outbound to the network IOCs listed in each campaign page</li>
+    <li>Rebuild CI/CD runners from clean images</li>
+  </ol>
+</div>
+{% else %}
+<div class="card success">
+  <span class="badge sev-low">CLEAN</span>
+  No project is running a package version on any loaded IOC list.
+</div>
+{% endif %}
+
+<h2 id="partial">Name-only matches ({{ partial_matches | length }})</h2>
+{% if partial_matches %}
+<div class="card warning">
+  <span class="badge sev-high">{{ partial_matches | length }} WARNING(S)</span>
+  Same package name, safe version — but the lib is under active attack.
+  Pin tight, audit every upgrade, prefer <code>npm ci</code> /
+  <code>uv sync --frozen</code> over <code>npm install</code> / <code>uv add</code>
+  while the campaign is live.
+</div>
+<table>
+<thead><tr>
+  <th>Project</th><th>Package</th><th>Installed version</th><th>Ecosystem</th>
+  <th>Where</th><th>Flagged versions</th><th>Campaign</th><th>XrayID</th>
+</tr></thead>
+<tbody>
+{% for m in partial_matches %}
+  <tr>
+    <td><code>{{ m.project }}</code></td>
+    <td class="pkg">{{ m.package }}</td>
+    <td class="ver">{{ m.version }}</td>
+    <td>{{ m.ecosystem }}</td>
+    <td>{{ m.where }}</td>
+    <td class="ver">{{ m.flagged_versions | join(", ") }}</td>
+    <td>{{ m.campaign }}</td>
+    <td><code>{{ m.xray_id }}</code></td>
+  </tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<div class="card success">
+  <span class="badge sev-low">CLEAN</span>
+  No project depends on any package family in the loaded IOC feeds
+  (not even at safe versions).
+</div>
+{% endif %}
+
+<h2 id="campaigns">Per-campaign full IOC reports</h2>
+{% if campaign_links %}
+<p>
+  Each campaign's complete malicious-package list + network IOCs + file
+  hashes + persistence artifacts:
+</p>
+<ul>
+{% for c in campaign_links %}
+  <li>
+    <code>{{ c.campaign.campaign }}</code> →
+    <a href="{{ c.html_rel }}">{{ c.html_rel }}</a> ·
+    <a href="{{ c.md_rel }}">{{ c.md_rel }}</a>
+  </li>
+{% endfor %}
+</ul>
+{% else %}
+<p><em>(No campaigns loaded.)</em></p>
+{% endif %}
+
+<footer>
+  Distinct report from <a href="report.html">report.html</a>.
+  Supply-chain matches use a separate model from CVE/GHSA findings —
+  IOC feeds in <code>data/iocs/*.json</code>, matchers in
+  <code>scripts/lib/iocs.py</code>.
+</footer>
+</body>
+</html>

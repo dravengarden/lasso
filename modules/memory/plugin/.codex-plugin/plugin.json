@@ -1,0 +1,25 @@
+{
+  "name": "lasso-memory",
+  "version": "0.2.0",
+  "description": "Translate durable facts between Codex homes and audit Claude Code and Grok memory stores without sharing a mutable store.",
+  "author": {
+    "name": "Draven"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Lasso Memory",
+    "shortDescription": "Move durable facts between agent memory stores.",
+    "longDescription": "Parses the Codex memory compilation artifact deterministically, uses DeepSeek V4 Flash only for durability and scope judgment, and emits reviewable fact files or Codex ad-hoc notes. memory-sync propagates additions, edits, and retirements only between compatible Codex homes while auditing Claude Code and Grok stores read-only; memory-tidy consolidates Codex facts on top of a synced state. Freshness, supersession, and deduplication stay in code; no runtime memory store is shared or written in place.",
+    "developerName": "Draven",
+    "category": "Developer Tools",
+    "capabilities": [
+      "memory extraction",
+      "cross-runtime facts",
+      "staleness detection",
+      "memory consolidation"
+    ],
+    "defaultPrompt": "Use $memory-sync to extract durable facts from Codex memory and review them before they reach another runtime."
+  },
+  "homepage": "https://github.com/dravengarden/lasso",
+  "repository": "https://github.com/dravengarden/lasso"
+}

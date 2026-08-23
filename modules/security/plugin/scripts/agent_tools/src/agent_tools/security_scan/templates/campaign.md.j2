@@ -1,0 +1,119 @@
+{# Per-campaign IOC report. Receives one `IocCampaign` as `campaign`,
+   plus `matches` (any IocMatch hits for this campaign in the scan that
+   triggered the render, possibly empty). #}
+# {{ campaign.campaign }}
+
+{% if campaign.attribution %}**Attribution**: {{ campaign.attribution }}
+{% endif %}
+**Source**: {{ campaign.source }}
+**Published**: {{ campaign.published_at }}
+**Ingested**: {{ campaign.ingested_at }}
+**Category**: `{{ campaign.category }}`
+
+{% if campaign.summary %}
+## Summary
+
+{{ campaign.summary }}
+{% endif %}
+
+{% if campaign.remediation_note %}
+> ⚠️  **Remediation order matters**: {{ campaign.remediation_note }}
+{% endif %}
+
+## Matches in current scan
+
+{% if matches %}
+**{{ matches | length }} hit(s)**:
+
+| Project | Package | Version | Ecosystem | Detected by | Where | XrayID |
+|---------|---------|---------|-----------|-------------|-------|--------|
+{% for m in matches -%}
+| `{{ m.project }}` | `{{ m.package }}` | `{{ m.version }}` | {{ m.ecosystem }} | {{ "scanner" if m.detected_by_scanner else "lockfile-only" }} | {{ m.where | replace('|', '\\|') }} | {{ m.xray_id }} |
+{% endfor %}
+{% else %}
+**No matches in current scan.** None of the scanned projects use any of the package versions listed below.
+{% endif %}
+
+## Malicious packages — full IOC list
+
+{% set npm_pkgs = campaign.ecosystems.get('npm', []) %}
+{% set pypi_pkgs = campaign.ecosystems.get('PyPI', []) %}
+{% set npm_ver_count = npm_pkgs | map(attribute='versions') | map('length') | sum %}
+{% set pypi_ver_count = pypi_pkgs | map(attribute='versions') | map('length') | sum %}
+
+- **npm**: {{ npm_pkgs | length }} packages, {{ npm_ver_count }} versions
+- **PyPI**: {{ pypi_pkgs | length }} packages, {{ pypi_ver_count }} versions
+
+### npm packages ({{ npm_pkgs | length }})
+
+| Package | Malicious versions | XrayID |
+|---------|--------------------|--------|
+{% for p in npm_pkgs | sort(attribute='name') -%}
+| `{{ p.name }}` | {{ p.versions | join(", ") }} | `{{ p.xray_id }}` |
+{% endfor %}
+
+### PyPI packages ({{ pypi_pkgs | length }})
+
+| Package | Malicious versions | XrayID |
+|---------|--------------------|--------|
+{% for p in pypi_pkgs | sort(attribute='name') -%}
+| `{{ p.name }}` | {{ p.versions | join(", ") }} | `{{ p.xray_id }}` |
+{% endfor %}
+
+## Network indicators
+
+{% if campaign.network_iocs.ips %}
+**IPs to block**:
+{% for ip in campaign.network_iocs.ips %}
+- `{{ ip }}`
+{% endfor %}
+{% endif %}
+
+{% if campaign.network_iocs.domains %}
+**Domains to block**:
+{% for d in campaign.network_iocs.domains %}
+- `{{ d }}`
+{% endfor %}
+{% endif %}
+
+{% if campaign.file_hashes_sha256 %}
+## File hashes (SHA256)
+
+{% for key, val in campaign.file_hashes_sha256.items() %}
+- **{{ key }}**:
+{% if val is string %}
+  - `{{ val }}`
+{% else %}
+{% for h in val %}
+  - `{{ h }}`
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if campaign.campaign_strings %}
+## Campaign strings (grep for these)
+
+{% for s in campaign.campaign_strings %}
+- `{{ s }}`
+{% endfor %}
+{% endif %}
+
+{% if campaign.github_indicators %}
+## GitHub indicators
+
+{% for key, val in campaign.github_indicators.items() %}
+- **{{ key }}**: {% if val is string %}`{{ val }}`{% else %}{% for v in val %}`{{ v }}`{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if campaign.persistence_artifacts %}
+## Persistence artifacts (host-level cleanup)
+
+{% for key, vals in campaign.persistence_artifacts.items() %}
+- **{{ key }}**:
+{% for v in vals %}
+  - `{{ v }}`
+{% endfor %}
+{% endfor %}
+{% endif %}

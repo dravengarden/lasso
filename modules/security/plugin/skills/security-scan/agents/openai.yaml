@@ -1,4 +1,4 @@
 interface:
-  display_name: "Security Scan"
-  short_description: "Lightweight security review checklist"
-  default_prompt: "Use $security-scan to review this change for secrets, injection, and supply-chain risk."
+  display_name: "Dependency Security Scan"
+  short_description: "Scan dependencies and record evidence-based verdicts"
+  default_prompt: "Use $security-scan to scan the requested projects and adjudicate high-impact findings with authoritative evidence."

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+plugin_root="$(cd "$scripts_dir/.." && pwd)"
+required_tools=(uv osv-scanner pip-audit trivy grype)
+missing_tools=()
+
+for tool in "${required_tools[@]}"; do
+    command -v "$tool" >/dev/null 2>&1 || missing_tools+=("$tool")
+done
+
+if ((${#missing_tools[@]})); then
+    if [[ ${COLUMBUS_SECURITY_TOOLCHAIN_BOOTSTRAPPED:-} == 1 ]]; then
+        printf 'Lasso Security toolchain is incomplete after nix develop: %s\n' "${missing_tools[*]}" >&2
+        exit 1
+    fi
+    if ! command -v nix >/dev/null 2>&1; then
+        printf 'Lasso Security requires Nix to provide scanner tools: %s\n' "${missing_tools[*]}" >&2
+        exit 1
+    fi
+    exec nix develop "$plugin_root" -c env COLUMBUS_SECURITY_TOOLCHAIN_BOOTSTRAPPED=1 "$scripts_dir/security-scan" "$@"
+fi
+
+exec uv run --project "$scripts_dir/agent_tools" security-scan "$@"

@@ -1,0 +1,17 @@
+{
+  "name": "lasso-memory",
+  "version": "0.2.0",
+  "description": "Translate durable facts between Codex homes and audit Claude Code and Grok memory stores without sharing a mutable store.",
+  "author": {
+    "name": "Draven"
+  },
+  "keywords": [
+    "codex",
+    "claude-code",
+    "memory",
+    "deepseek",
+    "grok"
+  ],
+  "homepage": "https://github.com/dravengarden/lasso",
+  "repository": "https://github.com/dravengarden/lasso"
+}

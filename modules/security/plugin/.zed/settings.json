@@ -1,0 +1,17 @@
+// Plugin-local Python diagnostics. Open this directory through its Nix shell so
+// Zed resolves `ty` from the plugin toolchain rather than the Columbus core.
+{
+  "languages": {
+    "Python": {
+      "language_servers": ["ty", "!pyright", "!basedpyright"]
+    }
+  },
+  "lsp": {
+    "ty": {
+      "binary": {
+        "path": "ty",
+        "arguments": ["server"]
+      }
+    }
+  }
+}

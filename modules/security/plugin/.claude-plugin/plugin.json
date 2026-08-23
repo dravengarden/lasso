@@ -1,0 +1,16 @@
+{
+  "name": "lasso-security",
+  "version": "0.2.0",
+  "description": "Deterministic cross-project dependency and supply-chain scanning for Lasso agents.",
+  "author": {
+    "name": "Draven"
+  },
+  "keywords": [
+    "codex",
+    "claude-code",
+    "security",
+    "supply-chain"
+  ],
+  "homepage": "https://github.com/dravengarden/lasso",
+  "repository": "https://github.com/dravengarden/lasso"
+}

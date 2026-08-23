@@ -1,0 +1,259 @@
+{# Per-campaign IOC report (HTML). Same context as campaign.md.j2:
+   - `campaign` : IocCampaign
+   - `matches`  : list[IocMatch] for this campaign in the current scan
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ campaign.campaign }} — IOC feed</title>
+<style>
+:root {
+  --bg: #fafafa; --fg: #111; --muted: #555; --accent: #1d4ed8;
+  --crit: #b91c1c; --high: #ea580c; --mod: #ca8a04; --low: #16a34a;
+  --row-alt: #f3f4f6; --border: #d1d5db; --card-bg: #ffffff;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  margin: 0; padding: 2rem; background: var(--bg); color: var(--fg);
+  font-size: 14px; line-height: 1.5; max-width: 1100px;
+}
+h1 { font-size: 1.8rem; margin: 0 0 .25rem; }
+h2 { font-size: 1.3rem; margin: 2rem 0 .8rem;
+  border-bottom: 1px solid var(--border); padding-bottom: .3rem; }
+h3 { font-size: 1.05rem; margin: 1.5rem 0 .5rem; }
+.meta { color: var(--muted); font-size: 13px; margin-bottom: 1.5rem; }
+.meta b { color: var(--fg); }
+.card { background: var(--card-bg); border: 1px solid var(--border);
+  padding: 1rem 1.2rem; border-radius: 6px; margin: 1rem 0; }
+.danger { border-left: 4px solid var(--crit); }
+.warning { border-left: 4px solid var(--high); }
+.success { border-left: 4px solid var(--low); }
+code, pre { font-family: ui-monospace, SF Mono, Menlo, monospace;
+  font-size: 12.5px; background: #e5e7eb; padding: .1rem .35rem; border-radius: 3px; }
+table { border-collapse: collapse; width: 100%; margin: .5rem 0 1rem; font-size: 13px; }
+th { background: #e5e7eb; text-align: left; padding: .4rem .6rem; font-weight: 600;
+  border-bottom: 2px solid var(--border); position: sticky; top: 0; }
+td { padding: .35rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:nth-child(even) td { background: var(--row-alt); }
+td.pkg { font-family: ui-monospace, monospace; font-weight: 600; }
+td.versions { font-family: ui-monospace, monospace; color: var(--muted); }
+td.xray { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--muted); }
+.badge { display: inline-block; padding: .1rem .55rem; border-radius: .25rem;
+  font-weight: 600; font-size: 11px; color: white; white-space: nowrap; }
+.sev-crit { background: var(--crit); }
+.sev-high { background: var(--high); }
+.sev-mod  { background: var(--mod); }
+.sev-low  { background: var(--low); }
+nav.toc {
+  background: var(--card-bg); border: 1px solid var(--border);
+  padding: .8rem 1.2rem; border-radius: 6px; margin: 0 0 1.5rem; font-size: 13px;
+}
+nav.toc a { color: var(--accent); text-decoration: none; margin-right: .8rem; }
+nav.toc a:hover { text-decoration: underline; }
+ul.iocs { font-family: ui-monospace, monospace; font-size: 12.5px; }
+.counts { color: var(--muted); font-size: 13px; }
+footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border);
+  color: var(--muted); font-size: 12px; }
+.toolbar { display: flex; gap: .5rem; margin-bottom: 1rem; }
+.toolbar input { padding: .35rem .6rem; border: 1px solid var(--border);
+  border-radius: 4px; font-family: inherit; width: 280px; }
+</style>
+</head>
+<body>
+
+<h1>{{ campaign.campaign }}</h1>
+<div class="meta">
+  {% if campaign.attribution %}<b>Attribution</b>: {{ campaign.attribution }} &middot;{% endif %}
+  <b>Published</b>: {{ campaign.published_at }} &middot;
+  <b>Ingested</b>: {{ campaign.ingested_at }} &middot;
+  <b>Source</b>: <a href="{{ campaign.source }}" target="_blank">{{ campaign.source }}</a>
+</div>
+
+<nav class="toc">
+  <b>Jump to:</b>
+  <a href="#matches">Matches in current scan</a>
+  <a href="#packages">Malicious packages</a>
+  <a href="#network">Network IOCs</a>
+  <a href="#hashes">File hashes</a>
+  <a href="#strings">Campaign strings</a>
+  <a href="#github">GitHub indicators</a>
+  <a href="#persistence">Persistence</a>
+</nav>
+
+{% if campaign.summary %}
+<div class="card">{{ campaign.summary }}</div>
+{% endif %}
+
+{% if campaign.remediation_note %}
+<div class="card danger">
+  <b>⚠ Remediation order matters</b>: {{ campaign.remediation_note }}
+</div>
+{% endif %}
+
+<h2 id="matches">Matches in current scan</h2>
+{% if matches %}
+<div class="card danger">
+  <span class="badge sev-crit">{{ matches | length }} HIT(S)</span>
+  in this scan.
+</div>
+<table>
+<thead><tr>
+  <th>Project</th><th>Package</th><th>Version</th><th>Ecosystem</th>
+  <th>Detected by</th><th>Where</th><th>XrayID</th>
+</tr></thead>
+<tbody>
+{% for m in matches %}
+  <tr>
+    <td><code>{{ m.project }}</code></td>
+    <td class="pkg">{{ m.package }}</td>
+    <td class="versions">{{ m.version }}</td>
+    <td>{{ m.ecosystem }}</td>
+    <td>
+      {% if m.detected_by_scanner %}
+        <span class="badge sev-mod">scanner</span>
+      {% else %}
+        <span class="badge sev-high">lockfile-only</span>
+      {% endif %}
+    </td>
+    <td>{{ m.where }}</td>
+    <td class="xray">{{ m.xray_id }}</td>
+  </tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<div class="card success">
+  <span class="badge sev-low">CLEAN</span>
+  No package versions from this campaign are present in the scanned projects.
+</div>
+{% endif %}
+
+<h2 id="packages">Malicious packages — full IOC list</h2>
+
+{% set npm_pkgs = campaign.ecosystems.get('npm', []) %}
+{% set pypi_pkgs = campaign.ecosystems.get('PyPI', []) %}
+{% set npm_ver_count = npm_pkgs | map(attribute='versions') | map('length') | sum %}
+{% set pypi_ver_count = pypi_pkgs | map(attribute='versions') | map('length') | sum %}
+
+<div class="counts">
+  <b>npm</b>: {{ npm_pkgs | length }} packages, {{ npm_ver_count }} versions &middot;
+  <b>PyPI</b>: {{ pypi_pkgs | length }} packages, {{ pypi_ver_count }} versions
+</div>
+
+<div class="toolbar">
+  <input id="filter" type="text" placeholder="filter packages…" oninput="filterRows()">
+</div>
+
+<h3>npm ({{ npm_pkgs | length }} packages)</h3>
+<table id="npm-table">
+<thead><tr><th>Package</th><th>Malicious versions</th><th>XrayID</th></tr></thead>
+<tbody>
+{% for p in npm_pkgs | sort(attribute='name') %}
+  <tr>
+    <td class="pkg">{{ p.name }}</td>
+    <td class="versions">{{ p.versions | join(", ") }}</td>
+    <td class="xray">{{ p.xray_id }}</td>
+  </tr>
+{% endfor %}
+</tbody>
+</table>
+
+<h3>PyPI ({{ pypi_pkgs | length }} packages)</h3>
+<table id="pypi-table">
+<thead><tr><th>Package</th><th>Malicious versions</th><th>XrayID</th></tr></thead>
+<tbody>
+{% for p in pypi_pkgs | sort(attribute='name') %}
+  <tr>
+    <td class="pkg">{{ p.name }}</td>
+    <td class="versions">{{ p.versions | join(", ") }}</td>
+    <td class="xray">{{ p.xray_id }}</td>
+  </tr>
+{% endfor %}
+</tbody>
+</table>
+
+<h2 id="network">Network indicators (block at perimeter)</h2>
+<div class="card">
+{% if campaign.network_iocs.ips %}
+  <b>IPs</b>:
+  <ul class="iocs">
+  {% for ip in campaign.network_iocs.ips %}<li>{{ ip }}</li>{% endfor %}
+  </ul>
+{% endif %}
+{% if campaign.network_iocs.domains %}
+  <b>Domains</b>:
+  <ul class="iocs">
+  {% for d in campaign.network_iocs.domains %}<li>{{ d }}</li>{% endfor %}
+  </ul>
+{% endif %}
+</div>
+
+{% if campaign.file_hashes_sha256 %}
+<h2 id="hashes">File hashes (SHA256)</h2>
+<div class="card">
+  <ul class="iocs">
+  {% for key, val in campaign.file_hashes_sha256.items() %}
+    <li><b>{{ key }}</b>:
+      {% if val is string %}{{ val }}
+      {% else %}
+        <ul>{% for h in val %}<li>{{ h }}</li>{% endfor %}</ul>
+      {% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if campaign.campaign_strings %}
+<h2 id="strings">Campaign strings (grep for these)</h2>
+<div class="card">
+  <ul class="iocs">
+  {% for s in campaign.campaign_strings %}<li>{{ s }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if campaign.github_indicators %}
+<h2 id="github">GitHub indicators</h2>
+<div class="card">
+{% for key, val in campaign.github_indicators.items() %}
+  <b>{{ key }}</b>:
+  {% if val is string %}<code>{{ val }}</code>
+  {% else %}
+    <ul class="iocs">{% for v in val %}<li>{{ v }}</li>{% endfor %}</ul>
+  {% endif %}
+{% endfor %}
+</div>
+{% endif %}
+
+{% if campaign.persistence_artifacts %}
+<h2 id="persistence">Persistence artifacts (host cleanup)</h2>
+<div class="card warning">
+{% for key, vals in campaign.persistence_artifacts.items() %}
+  <b>{{ key }}</b>:
+  <ul class="iocs">{% for v in vals %}<li>{{ v }}</li>{% endfor %}</ul>
+{% endfor %}
+</div>
+{% endif %}
+
+<footer>
+  Generated by the <code>security-scan</code> skill from
+  <code>{{ campaign.source }}</code>. This file is a renderable view
+  of the raw IOC feed at <code>data/iocs/&lt;campaign&gt;.json</code>;
+  edit the JSON to update.
+</footer>
+
+<script>
+function filterRows() {
+  const q = document.getElementById("filter").value.toLowerCase();
+  for (const t of ["npm-table", "pypi-table"]) {
+    for (const r of document.querySelectorAll(`#${t} tbody tr`)) {
+      r.style.display = r.textContent.toLowerCase().includes(q) ? "" : "none";
+    }
+  }
+}
+</script>
+</body>
+</html>

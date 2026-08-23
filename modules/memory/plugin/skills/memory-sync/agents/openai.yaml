@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cross-Runtime Memory Sync"
+  short_description: "Move durable facts between agent memory stores"
+  default_prompt: "Use $memory-sync to find stale memories and propose durable facts for the runtimes that are missing them."

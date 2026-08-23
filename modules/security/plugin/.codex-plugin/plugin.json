@@ -1,0 +1,24 @@
+{
+  "name": "lasso-security",
+  "version": "0.2.0",
+  "description": "Deterministic cross-project dependency and supply-chain scanning for Codex.",
+  "author": {
+    "name": "Draven"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Lasso Security",
+    "shortDescription": "Collect dependency and IOC evidence.",
+    "longDescription": "Runs pinned local vulnerability scanners across workspace projects, normalizes scanner-agreement and IOC evidence, and retains append-only adjudication history while official Codex Security owns semantic source analysis.",
+    "developerName": "Draven",
+    "category": "Developer Tools",
+    "capabilities": [
+      "dependency scanning",
+      "IOC matching",
+      "security reports"
+    ],
+    "defaultPrompt": "Use $security-scan to collect deterministic dependency and IOC evidence for the requested workspace projects."
+  },
+  "homepage": "https://github.com/dravengarden/lasso",
+  "repository": "https://github.com/dravengarden/lasso"
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Memory Tidy"
+  short_description: "Consolidate, merge, and prune agent memory"
+  default_prompt: "Use $memory-tidy to consolidate, merge, and prune duplicated or superseded memories after a sync."

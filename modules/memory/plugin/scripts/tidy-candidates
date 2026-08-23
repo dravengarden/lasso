@@ -1,0 +1,161 @@
+#!/usr/bin/env bash
+# tidy-candidates: find duplicate and near-duplicate durable facts inside each
+# memory store. Read-only: never writes, moves, or deletes anything.
+# It is the deterministic prefilter for $memory-tidy; the model then decides
+# which candidate pairs to merge, supersede, or retire.
+#
+# Only files inside the SAME home and category are compared.
+#
+# Usage: tidy-candidates [--threshold=0.72] [--min-words=4]
+# Env: CODEX_A, CODEX_B, CLAUDE_HOME
+set -euo pipefail
+
+CODEX_A="${CODEX_A:-$HOME/.codex}"
+CODEX_B="${CODEX_B:-$HOME/.local/state/cowboy/providers/codex-deepseek/codex-home}"
+CLAUDE_HOME="${CLAUDE_HOME:-$HOME/.claude}"
+
+THRESHOLD=0.72
+MIN_WORDS=4
+for arg in "$@"; do
+    case "$arg" in
+        --threshold=*) THRESHOLD="${arg#--threshold=}" ;;
+        --min-words=*) MIN_WORDS="${arg#--min-words=}" ;;
+        -h | --help)
+            printf '%s\n' 'usage: tidy-candidates [--threshold=0.72] [--min-words=4]'
+            exit 0
+            ;;
+        *)
+            printf 'unknown argument: %s\n' "$arg" >&2
+            exit 2
+            ;;
+    esac
+done
+
+# label<TAB>path — one line per fact file. MEMORY.md is a generated index and
+# is excluded; the model must never hand-write a compiled artifact.
+emit_codex() {
+    local home="$1" label="$2"
+    [ -d "$home/memories/rollout_summaries" ] || return 0
+    [ -d "$home/memories/extensions/ad_hoc/notes" ] || return 0
+    local f
+    for f in "$home"/memories/rollout_summaries/*.md "$home"/memories/extensions/ad_hoc/notes/*.md; do
+        [ -e "$f" ] || continue
+        [ "$(basename "$f")" = "MEMORY.md" ] && continue
+        printf '%s\t%s\n' "$label" "$f"
+    done
+}
+
+emit_runtime_store() {
+    local root="$1" label="$2"
+    [ -d "$root" ] || return 0
+    local f
+    for f in "$root"/*.md; do
+        [ -e "$f" ] || continue
+        [ "$(basename "$f")" = "MEMORY.md" ] && continue
+        printf '%s\t%s\n' "$label" "$f"
+    done
+}
+
+emit_runtime_stores() {
+    local home="$1" runtime="$2" root
+    [ -d "$home" ] || return 0
+    while IFS= read -r -d '' root; do
+        emit_runtime_store "$root" "$runtime:$root"
+    done < <(find "$home" -type d -name memory -print0)
+}
+
+# Strip YAML frontmatter when present (first line is ---), lowercase, keep
+# alphanumeric words, sort -u. Files without frontmatter pass through whole.
+normalize_words() {
+    awk '
+        BEGIN { in_meta = 0 }
+        NR == 1 && /^---[[:space:]]*$/ { in_meta = 1; next }
+        in_meta && /^---[[:space:]]*$/ { in_meta = 0; next }
+        !in_meta { print }
+    ' "$1" \
+        | tr '[:upper:]' '[:lower:]' \
+        | sed 's/[^[:alnum:][:space:]]/ /g' \
+        | tr -s '[:space:]' '\n' \
+        | sed '/^$/d' \
+        | sort -u
+}
+
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+
+declare -a labels paths
+index=0
+while IFS=$'\t' read -r label path; do
+    [ -n "$path" ] || continue
+    normalize_words "$path" >"$work/f$index.words"
+    if [ "$(wc -l <"$work/f$index.words")" -lt "$MIN_WORDS" ]; then
+        rm -f "$work/f$index.words"
+        continue
+    fi
+    labels[index]="$label"
+    paths[index]="$path"
+    index=$((index + 1))
+done < <(
+    emit_codex "$CODEX_A" "codex-a"
+    emit_codex "$CODEX_B" "codex-b"
+    emit_runtime_stores "$CLAUDE_HOME/projects" "claude"
+)
+
+count="$index"
+if [ "$count" -lt 2 ]; then
+    printf 'No candidate pairs: fewer than two fact files.\n'
+    exit 0
+fi
+
+# One awk pass over every word set: same-label pairs only, Jaccard on unique
+# words. A per-pair shell loop would spawn thousands of comm processes.
+{
+    printf '0\t0\tindex\n'
+    for i in $(seq 0 $((count - 1))); do
+        printf '%s\t%s\t%s\n' "$i" "${labels[$i]}" "${paths[$i]}"
+    done
+} >"$work/index"
+
+awk -v work="$work" -v thr="$THRESHOLD" '
+    BEGIN { FS = "\t"; maxidx = -1 }
+    FILENAME == (work "/index") {
+        # first line is the dummy 0/0/index row used to anchor word parsing
+        if (NR == 1) next
+        label[$1] = $2
+        path[$1] = $3
+        if ($1 > maxidx) maxidx = $1
+        next
+    }
+    {
+        if (match(FILENAME, /f([0-9]+)\.words$/, m) == 0) next
+        idx = m[1]
+        nwords[idx]++
+        words[idx] = words[idx] " " $1
+        wset[idx, $1] = 1
+    }
+    END {
+        n = maxidx + 1
+        any = 0
+        for (i = 0; i < n; i++) {
+            if (nwords[i] < 1) continue
+            for (j = i + 1; j < n; j++) {
+                if (label[i] != label[j] || nwords[j] < 1) continue
+                ni = nwords[i]
+                nj = nwords[j]
+                split(words[i], wa, " ")
+                inter = 0
+                for (k = 1; k <= ni; k++) {
+                    if ((j SUBSEP wa[k]) in wset) inter++
+                }
+                if (inter < 1) continue
+                union = ni + nj - inter
+                sim = inter / union
+                if (sim + 0 >= thr + 0) {
+                    printf "%.3f\t%s\t%s\t%s\t%s\n", sim, label[i], path[i], label[j], path[j]
+                    any = 1
+                }
+            }
+        }
+        if (!any) printf "No candidate pairs at similarity >= %s.\n", thr
+    }
+' "$work/index" "$work"/f*.words | sort -t"$(printf '\t')" -k1,1rn | column -t -s "$(printf '\t')"

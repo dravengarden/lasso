@@ -32,9 +32,9 @@ path = "modules/lang-nix"
 
 [[module]]
 id = "security"
-version = "0.1.0"
+version = "0.2.0"
 kind = "plugin"
-description = "Security scan skill pack (lightweight stub; extend in place)"
+description = "Deterministic dependency and supply-chain scanning"
 path = "modules/security"
 skills = ["security-scan"]
 
@@ -44,3 +44,12 @@ version = "0.1.0"
 kind = "plugin"
 description = "Stateless Git/worktree safety hooks for agent sessions"
 path = "modules/hooks"
+
+[[module]]
+id = "memory"
+version = "0.2.0"
+kind = "plugin"
+description = "Cross-runtime durable memory sync and tidy"
+path = "modules/memory"
+skills = ["memory-sync", "memory-tidy"]
+
