@@ -66,8 +66,16 @@ printf -- '- upstream: %s; cached divergence: %s\n' "${upstream:-none}" "$diverg
 printf -- '- remote freshness: unknown until a successful fetch in the current task\n'
 printf -- '- coordination: use Codex Handoff to move one live task; Claude moves only committed Git into a fresh target-host worktree; parallel tasks use separate worktrees and branches; never pull, reset, clean, or auto-stash a dirty checkout\n'
 
-# Optional instance deployment revision (path configurable).
-deployment_revision_file=${LASSO_DEPLOYMENT_REVISION_FILE:-/run/current-system/etc/lasso-deployment/revision}
+# Optional instance deployment revision (path configurable). Prefer explicit
+# env, then Columbus's live etc path, then the Lasso default.
+deployment_revision_file=${LASSO_DEPLOYMENT_REVISION_FILE:-${COLUMBUS_DEPLOYMENT_REVISION_FILE:-}}
+if [[ -z $deployment_revision_file ]]; then
+    if [[ -r /run/current-system/etc/columbus-deployment/revision ]]; then
+        deployment_revision_file=/run/current-system/etc/columbus-deployment/revision
+    else
+        deployment_revision_file=/run/current-system/etc/lasso-deployment/revision
+    fi
+fi
 if [[ -n $machine_id && -r $deployment_revision_file ]]; then
     IFS= read -r deployment_revision <"$deployment_revision_file" || true
     if [[ -n ${deployment_revision:-} ]]; then

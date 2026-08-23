@@ -72,17 +72,21 @@ def _config_path() -> pathlib.Path:
 
 @functools.cache
 def lasso_root() -> pathlib.Path:
-    """Resolve the workspace root without inventing a personal home default."""
-    for key in ("LASSO_ROOT", "COLUMBUS_ROOT"):
-        value = os.environ.get(key, "").strip()
-        if value:
-            return pathlib.Path(value).resolve()
+    """Resolve the workspace root without inventing a personal home default.
+
+    Explicit config `paths.root` wins over ambient LASSO_ROOT/COLUMBUS_ROOT so
+    tests and host config.json can pin the stable checkout without env leakage.
+    """
     try:
         value = json.loads(_config_path().read_text()).get("paths", {}).get("root")
         if isinstance(value, str) and value:
             return pathlib.Path(value).resolve()
     except (OSError, ValueError):
         pass
+    for key in ("LASSO_ROOT", "COLUMBUS_ROOT"):
+        value = os.environ.get(key, "").strip()
+        if value:
+            return pathlib.Path(value).resolve()
     cwd = pathlib.Path.cwd().resolve()
     for directory in (cwd, *cwd.parents):
         if (directory / "project-defs" / "registry.toml").is_file():
