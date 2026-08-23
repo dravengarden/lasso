@@ -330,14 +330,12 @@ func preservedForeignPlugins(markets ...*marketplace) []marketplacePlugin {
 }
 
 func hasInstanceHarnessPlugin(workspace string) bool {
-	// Columbus and similar instances already ship a harness plugin; avoid a
-	// duplicate skill tree from lasso-core until they retire the fork.
-	candidates := []string{
-		filepath.Join(workspace, "plugins", "columbus-harness"),
-		filepath.Join(workspace, "plugins", "harness-core"),
-	}
-	for _, path := range candidates {
-		if info, err := os.Stat(path); err == nil && info.IsDir() {
+	// Skip vendoring lasso-core only while an instance plugin still owns the
+	// overlapping core skill names. After those skills move to lasso-core,
+	// ensureCorePlugin runs even if columbus-harness remains for hooks.
+	for _, name := range []string{"columbus-harness", "harness-core"} {
+		marker := filepath.Join(workspace, "plugins", name, "skills", "project-add", "SKILL.md")
+		if _, err := os.Stat(marker); err == nil {
 			return true
 		}
 	}

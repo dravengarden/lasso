@@ -40,8 +40,9 @@ Columbus (instance)
 
 - preserves an existing marketplace `name` / interface (e.g. `columbus`)
 - preserves non-`lasso-*` plugins (`columbus-harness`, …)
-- skips vendoring `lasso-core` when `plugins/columbus-harness` (or
-  `plugins/harness-core`) is already present, to avoid duplicate skill trees
+- skips vendoring `lasso-core` only while an instance plugin still owns
+  overlapping core skills (e.g. `skills/project-add`); once those skills are
+  removed from `columbus-harness`, `lasso-core` is installed automatically
 - still materializes additive module plugins such as `lasso-hooks`
 
 ## Compatibility bridge (transition)
