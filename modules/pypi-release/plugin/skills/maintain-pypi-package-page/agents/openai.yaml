@@ -1,0 +1,4 @@
+interface:
+  display_name: "Maintain PyPI package page"
+  short_description: "Improve Python CLI install and usage docs"
+  default_prompt: "Use $maintain-pypi-package-page to improve this project's PyPI package page."

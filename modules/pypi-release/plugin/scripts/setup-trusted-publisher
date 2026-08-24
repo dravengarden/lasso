@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+	cat <<'EOF'
+Usage: setup-trusted-publisher PROJECT [--repo OWNER/REPO]
+       [--workflow FILE] [--environment NAME] [--pending] [--print]
+
+Prepare the fields for a PyPI GitHub Actions Trusted Publisher binding.
+PyPI owns browser authentication and the resulting trust relationship.
+EOF
+}
+
+if [[ ${1:-} == -h || ${1:-} == --help ]]; then
+	usage
+	exit 0
+fi
+
+project=${1:-}
+[[ -n $project && $project != -* ]] || {
+	usage >&2
+	exit 2
+}
+shift
+
+repository=
+workflow=publish-pypi.yml
+environment=
+pending=0
+print_only=0
+while (($#)); do
+	case $1 in
+	--repo)
+		repository=${2:?--repo requires OWNER/REPO}
+		shift 2
+		;;
+	--workflow)
+		workflow=${2:?--workflow requires a filename}
+		shift 2
+		;;
+	--environment)
+		environment=${2:?--environment requires a name}
+		shift 2
+		;;
+	--pending)
+		pending=1
+		shift
+		;;
+	--print)
+		print_only=1
+		shift
+		;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	*)
+		printf 'setup-trusted-publisher: unknown argument: %s\n' "$1" >&2
+		exit 2
+		;;
+	esac
+done
+
+[[ $project =~ ^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*$ ]] || {
+	printf 'setup-trusted-publisher: invalid PyPI project: %s\n' "$project" >&2
+	exit 2
+}
+[[ $workflow =~ ^[A-Za-z0-9_.-]+\.ya?ml$ ]] || {
+	printf 'setup-trusted-publisher: workflow must be a .yml or .yaml filename\n' >&2
+	exit 2
+}
+[[ -z $environment || (${#environment} -le 255 && ! $environment =~ [[:cntrl:]]) ]] || {
+	printf 'setup-trusted-publisher: invalid GitHub environment: %s\n' "$environment" >&2
+	exit 2
+}
+
+repo_root=$(git rev-parse --show-toplevel)
+[[ -f $repo_root/.github/workflows/$workflow ]] || {
+	printf 'setup-trusted-publisher: missing .github/workflows/%s\n' "$workflow" >&2
+	exit 1
+}
+if [[ -z $repository ]]; then
+	repository=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+fi
+[[ $repository =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || {
+	printf 'setup-trusted-publisher: invalid GitHub repository: %s\n' "$repository" >&2
+	exit 2
+}
+
+owner=${repository%%/*}
+repo=${repository#*/}
+if ((pending)); then
+	url=https://pypi.org/manage/account/publishing/
+else
+	url="https://pypi.org/manage/project/$project/settings/publishing/"
+fi
+cat <<EOF
+PyPI trusted publisher
+Project: $project
+Owner: $owner
+Repository: $repo
+Workflow: $workflow
+Environment: ${environment:-(Any)}
+URL: $url
+EOF
+
+if ((print_only)); then
+	exit 0
+fi
+if command -v xdg-open >/dev/null 2>&1 && xdg-open "$url"; then
+	exit 0
+fi
+if command -v open >/dev/null 2>&1 && open "$url"; then
+	exit 0
+fi
+printf 'setup-trusted-publisher: browser did not open; use the URL printed above\n' >&2
+exit 1

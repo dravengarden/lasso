@@ -13,6 +13,7 @@ mapfile -t skills < <(
             find skills -mindepth 2 -maxdepth 2 -name SKILL.md -print
         fi
         find plugins -mindepth 4 -maxdepth 4 -path '*/skills/*/SKILL.md' -print
+        find modules -mindepth 5 -maxdepth 5 -path '*/plugin/skills/*/SKILL.md' -print
         for project_skills in projects/*/*/.agents/skills; do
             if [[ -d $project_skills ]]; then
                 rg --files "$project_skills" -g 'SKILL.md' || true

@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+	cat <<'EOF'
+Usage: setup-trusted-publisher PACKAGE [--repo OWNER/REPO]
+       [--workflow FILE] [--print]
+
+Prepare or apply the one-time npm GitHub Actions Trusted Publisher binding.
+npm owns authentication, 2FA, and the resulting trust relationship.
+EOF
+}
+
+if [[ ${1:-} == -h || ${1:-} == --help ]]; then
+	usage
+	exit 0
+fi
+
+package=${1:-}
+[[ -n $package && $package != -* ]] || {
+	usage >&2
+	exit 2
+}
+shift
+
+repository=
+workflow=publish-npm.yml
+print_only=0
+while (($#)); do
+	case $1 in
+	--repo)
+		repository=${2:?--repo requires OWNER/REPO}
+		shift 2
+		;;
+	--workflow)
+		workflow=${2:?--workflow requires a filename}
+		shift 2
+		;;
+	--print)
+		print_only=1
+		shift
+		;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	*)
+		printf 'setup-trusted-publisher: unknown argument: %s\n' "$1" >&2
+		exit 2
+		;;
+	esac
+done
+
+[[ $package =~ ^(@[a-z0-9_.-]+/)?[a-z0-9_.-]+$ ]] || {
+	printf 'setup-trusted-publisher: invalid npm package: %s\n' "$package" >&2
+	exit 2
+}
+[[ $workflow =~ ^[A-Za-z0-9_.-]+\.ya?ml$ ]] || {
+	printf 'setup-trusted-publisher: workflow must be a .yml or .yaml filename\n' >&2
+	exit 2
+}
+
+repo_root=$(git rev-parse --show-toplevel)
+[[ -f $repo_root/.github/workflows/$workflow ]] || {
+	printf 'setup-trusted-publisher: missing .github/workflows/%s\n' "$workflow" >&2
+	exit 1
+}
+if [[ -z $repository ]]; then
+	repository=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+fi
+[[ $repository =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || {
+	printf 'setup-trusted-publisher: invalid GitHub repository: %s\n' "$repository" >&2
+	exit 2
+}
+
+if npm trust github --help >/dev/null 2>&1; then
+	npm_cli=(npm)
+else
+	command -v npx >/dev/null 2>&1 || {
+		printf 'setup-trusted-publisher: npm trust is unavailable and npx is not installed\n' >&2
+		exit 1
+	}
+	npm_cli=(npx --yes npm@12.0.2)
+fi
+
+command=(
+	"${npm_cli[@]}" trust github "$package"
+	--file "$workflow"
+	--repo "$repository"
+	--allow-publish
+	--yes
+)
+if ((print_only)); then
+	printf '%q ' "${command[@]}"
+	printf '\n'
+	exit 0
+fi
+
+exec "${command[@]}"

@@ -1,5 +1,21 @@
 # Module system
 
+## Units and boundaries
+
+Lasso has three nested extension units:
+
+| Unit | Owner | Meaning |
+|---|---|---|
+| module | Lasso workspace | smallest catalog install, pin, dependency, and remove unit |
+| plugin | agent runtime | materialized discovery and distribution boundary for skills, scripts, assets, hooks, MCP, or apps |
+| skill | agent | smallest triggered workflow and tool-usage contract inside a plugin |
+
+A plugin module currently materializes exactly one `plugins/lasso-<module>/`
+tree. Split capabilities into separate modules when users should install,
+upgrade, or remove them independently. Keep multiple related skills in one
+plugin when they share that installation boundary; do not create a plugin per
+command.
+
 ## Catalog
 
 The product repository ships `modules/catalog.toml`. Each entry has:
@@ -44,6 +60,9 @@ lasso module remove <id> --yes
 | `lang-go` / `lang-rust` / `lang-nix` | convention | language packs |
 | `security` | plugin | lightweight scan skill (stub) |
 | `hooks` | plugin | Git/worktree safety hooks (config-driven) |
+| `npm-release` | plugin | native npm release and package-page skills |
+| `pypi-release` | plugin | native PyPI release and project-page skills |
+| `cargo-release` | plugin | native Cargo/crates.io release and crate-page skills |
 
 ## Authoring a module
 

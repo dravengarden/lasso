@@ -1,0 +1,4 @@
+interface:
+  display_name: "Maintain npm package page"
+  short_description: "Improve npm CLI install and usage docs"
+  default_prompt: "Use $maintain-npm-package-page to improve this project's npm package page."

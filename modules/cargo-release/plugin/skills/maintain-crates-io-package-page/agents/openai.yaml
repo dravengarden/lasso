@@ -1,0 +1,4 @@
+interface:
+  display_name: "Maintain crates.io package page"
+  short_description: "Improve Rust CLI install and usage docs"
+  default_prompt: "Use $maintain-crates-io-package-page to improve this crate's crates.io package page."

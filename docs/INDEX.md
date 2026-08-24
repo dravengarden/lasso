@@ -17,7 +17,8 @@ Instance-specific fleet docs (machines, business projects) do not live here.
 3. [`contracts/modules.md`](contracts/modules.md) — installable modules
 4. [`contracts/agent-runtimes.md`](contracts/agent-runtimes.md) — Codex / Claude / Grok
 5. [`design/columbus-on-lasso.md`](design/columbus-on-lasso.md) — instance migration contract
-6. [`guides/init.md`](guides/init.md) — creating a workspace
+6. [`design/registry-release-modules.md`](design/registry-release-modules.md) — package registry release plugins
+7. [`guides/init.md`](guides/init.md) — creating a workspace
 
 ## Contracts
 
@@ -28,6 +29,7 @@ Instance-specific fleet docs (machines, business projects) do not live here.
 ## Design
 
 - [`design/columbus-on-lasso.md`](design/columbus-on-lasso.md)
+- [`design/registry-release-modules.md`](design/registry-release-modules.md)
 
 ## Guides
 

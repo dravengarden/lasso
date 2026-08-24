@@ -18,6 +18,9 @@ lasso module list --installed --format=json
 ```bash
 lasso module add lang-rust --format=json
 lasso module add security
+lasso module add npm-release
+lasso module add pypi-release
+lasso module add cargo-release
 ```
 
 Effects:
@@ -48,5 +51,8 @@ Requires `--yes`. Refuses when another installed module lists this id in
 | `lang-rust` | convention | Rust coding conventions |
 | `lang-nix` | convention | Nix coding conventions |
 | `security` | plugin | lightweight `security-scan` skill |
+| `npm-release` | plugin | native npm release and package-page skills |
+| `pypi-release` | plugin | native PyPI release and project-page skills |
+| `cargo-release` | plugin | native Cargo/crates.io release and crate-page skills |
 
 Authoring guide: [Modules concept](/lasso/concepts/modules/).

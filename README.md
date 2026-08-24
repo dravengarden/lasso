@@ -213,6 +213,9 @@ Add or remove capabilities without forking Lasso:
 lasso module list
 lasso module add security
 lasso module add lang-rust
+lasso module add npm-release
+lasso module add pypi-release
+lasso module add cargo-release
 lasso module remove security --yes
 ```
 

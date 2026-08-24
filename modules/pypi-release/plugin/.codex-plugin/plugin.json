@@ -1,0 +1,37 @@
+{
+  "name": "lasso-pypi-release",
+  "version": "0.1.0",
+  "description": "Release and document PyPI CLI distributions with native Python tooling plus delegated Trusted Publisher setup.",
+  "author": {
+    "name": "dravengarden"
+  },
+  "homepage": "https://github.com/dravengarden/lasso",
+  "repository": "https://github.com/dravengarden/lasso",
+  "keywords": [
+    "codex",
+    "pypi",
+    "python",
+    "release",
+    "oidc"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Lasso PyPI Release",
+    "shortDescription": "Release and document Python CLI distributions.",
+    "longDescription": "Guides native Python packaging, Trusted Publisher setup, OIDC publication, fresh-install acceptance, and project-owned PyPI pages without retaining credentials or wrapping routine releases.",
+    "developerName": "dravengarden",
+    "category": "Developer Tools",
+    "capabilities": [
+      "PyPI distribution release workflow",
+      "PyPI Trusted Publisher setup",
+      "PyPI registry acceptance",
+      "PyPI project-page template"
+    ],
+    "defaultPrompt": [
+      "Release this Python CLI distribution to PyPI and verify it.",
+      "Configure this project for PyPI Trusted Publishing.",
+      "Improve this project's PyPI page."
+    ]
+  }
+}
+

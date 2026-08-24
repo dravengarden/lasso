@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release npm package"
+  short_description: "Publish and verify npm packages safely"
+  default_prompt: "Use $release-npm-package to release this npm package with native tools and fresh-install acceptance."

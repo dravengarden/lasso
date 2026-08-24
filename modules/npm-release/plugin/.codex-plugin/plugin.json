@@ -1,0 +1,36 @@
+{
+  "name": "lasso-npm-release",
+  "version": "0.1.0",
+  "description": "Release and document npm CLI packages with native npm and GitHub tools plus delegated Trusted Publisher setup.",
+  "author": {
+    "name": "dravengarden"
+  },
+  "homepage": "https://github.com/dravengarden/lasso",
+  "repository": "https://github.com/dravengarden/lasso",
+  "keywords": [
+    "codex",
+    "npm",
+    "release",
+    "oidc"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Lasso npm Release",
+    "shortDescription": "Release and document npm CLI packages.",
+    "longDescription": "Guides native npm packaging, Trusted Publisher setup, OIDC publication, fresh-install acceptance, and project-owned npm package pages without retaining credentials or wrapping routine releases.",
+    "developerName": "dravengarden",
+    "category": "Developer Tools",
+    "capabilities": [
+      "npm package release workflow",
+      "npm Trusted Publisher setup",
+      "npm registry acceptance",
+      "npm package-page template"
+    ],
+    "defaultPrompt": [
+      "Release this npm CLI package and verify a fresh install.",
+      "Configure this package for npm Trusted Publishing.",
+      "Improve this package's npm page."
+    ]
+  }
+}
+

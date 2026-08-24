@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release PyPI package"
+  short_description: "Publish and verify Python distributions"
+  default_prompt: "Use $release-pypi-package to release this Python distribution with native tools and fresh-install acceptance."

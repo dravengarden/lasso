@@ -35,6 +35,18 @@ plugins/lasso-<id>/      materialized when module/plugin exists
 Marketplaces (Codex + Claude/Grok) are regenerated to include installed plugin
 modules alongside `lasso-core`.
 
+## Module, plugin, and skill
+
+The Lasso CLI installs and pins **modules**. A plugin module materializes one
+agent-runtime **plugin** named `lasso-<module>`. That plugin may contain several
+related **skills**, where each skill describes one triggered workflow and how
+to use its native tools.
+
+Use separate modules when users should be able to install or remove the
+capabilities independently. Keep related workflows in one plugin instead of
+creating a plugin for every command. For example, `npm-release` contains both
+the npm release workflow and the npm package-page maintenance workflow.
+
 ## Authoring
 
 ```text

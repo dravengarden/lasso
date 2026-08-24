@@ -53,3 +53,26 @@ description = "Cross-runtime durable memory sync and tidy"
 path = "modules/memory"
 skills = ["memory-sync", "memory-tidy"]
 
+[[module]]
+id = "npm-release"
+version = "0.1.0"
+kind = "plugin"
+description = "Native npm release, Trusted Publisher, acceptance, and package-page workflows"
+path = "modules/npm-release"
+skills = ["release-npm-package", "maintain-npm-package-page"]
+
+[[module]]
+id = "pypi-release"
+version = "0.1.0"
+kind = "plugin"
+description = "Native PyPI release, Trusted Publisher, acceptance, and project-page workflows"
+path = "modules/pypi-release"
+skills = ["release-pypi-package", "maintain-pypi-package-page"]
+
+[[module]]
+id = "cargo-release"
+version = "0.1.0"
+kind = "plugin"
+description = "Native Cargo release, crates.io Trusted Publisher, acceptance, and crate-page workflows"
+path = "modules/cargo-release"
+skills = ["release-cargo-package", "maintain-crates-io-package-page"]

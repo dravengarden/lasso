@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release Cargo package"
+  short_description: "Publish and verify public Rust crates"
+  default_prompt: "Use $release-cargo-package to release this crate with native Cargo and fresh-install acceptance."

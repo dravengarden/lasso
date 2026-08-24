@@ -21,6 +21,7 @@ lint:
 
 test:
     go test ./...
+    bash scripts/check-release-modules.sh
 
 docs-index-check:
     bash modules/docs-index/scripts/check-docs-index.sh
