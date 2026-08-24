@@ -1,9 +1,8 @@
 {
   "name": "lasso-npm-release",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared native npm release and package-page workflows with delegated Trusted Publisher setup.",
   "author": {
     "name": "dravengarden"
   }
 }
-

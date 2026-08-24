@@ -55,7 +55,7 @@ skills = ["memory-sync", "memory-tidy"]
 
 [[module]]
 id = "npm-release"
-version = "0.1.0"
+version = "0.1.1"
 kind = "plugin"
 description = "Native npm release, Trusted Publisher, acceptance, and package-page workflows"
 path = "modules/npm-release"
@@ -63,7 +63,7 @@ skills = ["release-npm-package", "maintain-npm-package-page"]
 
 [[module]]
 id = "pypi-release"
-version = "0.1.0"
+version = "0.1.1"
 kind = "plugin"
 description = "Native PyPI release, Trusted Publisher, acceptance, and project-page workflows"
 path = "modules/pypi-release"
@@ -71,7 +71,7 @@ skills = ["release-pypi-package", "maintain-pypi-package-page"]
 
 [[module]]
 id = "cargo-release"
-version = "0.1.0"
+version = "0.1.1"
 kind = "plugin"
 description = "Native Cargo release, crates.io Trusted Publisher, acceptance, and crate-page workflows"
 path = "modules/cargo-release"

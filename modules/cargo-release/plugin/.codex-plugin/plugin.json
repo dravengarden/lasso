@@ -1,6 +1,6 @@
 {
   "name": "lasso-cargo-release",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Release and document crates.io CLI packages with native Cargo and GitHub tools plus delegated Trusted Publisher setup.",
   "author": {
     "name": "dravengarden"
@@ -34,4 +34,3 @@
     ]
   }
 }
-
