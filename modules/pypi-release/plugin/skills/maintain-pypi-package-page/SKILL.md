@@ -27,4 +27,3 @@ Verify `pyproject.toml` metadata selects the intended README and content type.
 Build the distribution and inspect how the long description renders when
 practical. Keep package links and command examples current. Lasso neither owns
 nor synchronizes the copied page.
-

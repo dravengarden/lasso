@@ -38,4 +38,3 @@ Confirm `package.json` points npm at the intended README and that package
 metadata, links, binary names, version examples, and platform claims are
 current. Render or inspect the packed README where practical. Lasso does not
 generate, synchronize, lint, publish, or retain state for this page.
-

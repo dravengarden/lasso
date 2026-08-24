@@ -36,4 +36,3 @@ Yarn dlx, Bun bunx, or Deno x when the package actually supports them. -->
 - [Documentation]([DOCS_URL])
 - [Source]([SOURCE_URL])
 - [Issues]([ISSUES_URL])
-

@@ -72,4 +72,3 @@ uvx --from DISTRIBUTION==VERSION COMMAND --version
 Also test `pip`, `uv tool install`, or `pipx` when the project documents them.
 Exercise the installed CLI's shortest useful behavior. Report workflow success,
 PyPI visibility, digest equality, clean installation, and execution separately.
-

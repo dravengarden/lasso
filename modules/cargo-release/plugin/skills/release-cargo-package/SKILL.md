@@ -67,4 +67,3 @@ Compare the crates.io checksum with the released `.crate` when the project
 promises byte identity. Verify the installed binary set, not only compilation.
 Report upload, index visibility, checksum equality, fresh installation, and
 execution separately.
-
