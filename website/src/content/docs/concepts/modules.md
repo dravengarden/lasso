@@ -3,6 +3,10 @@ title: Modules
 description: Versioned capability packs installed into a workspace.
 ---
 
+This page documents the module format in detail. For the product-level
+extension model and ownership boundary, start with the
+[extension model](/lasso/concepts/extensibility/).
+
 ## Model
 
 The product ships `modules/catalog.toml`. Each entry is an installable pack:

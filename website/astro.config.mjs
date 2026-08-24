@@ -10,8 +10,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Lasso',
-      description:
-        'An agent-native workspace layer for project identity, checkouts, worktrees, skills, and durable coordination.',
+      description: 'An agent-native monorepo.',
       logo: {
         src: './src/assets/lasso-logo.png',
         alt: 'Lasso logo',
@@ -33,6 +32,7 @@ export default defineConfig({
           label: 'Start here',
           items: [
             { label: 'Introduction', slug: 'index' },
+            { label: 'Core mechanism', slug: 'concepts/core-mechanism' },
             { label: 'Quick start', slug: 'guides/quick-start' },
             { label: 'Install', slug: 'guides/install' },
           ],
@@ -50,7 +50,8 @@ export default defineConfig({
           label: 'Concepts',
           items: [
             { label: 'Overview', slug: 'concepts/overview' },
-            { label: 'Modules', slug: 'concepts/modules' },
+            { label: 'Extension model', slug: 'concepts/extensibility' },
+            { label: 'Modules in detail', slug: 'concepts/modules' },
             { label: 'Agent runtimes', slug: 'concepts/agent-runtimes' },
             { label: 'Acceptance', slug: 'concepts/acceptance' },
           ],

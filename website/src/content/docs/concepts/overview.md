@@ -1,43 +1,53 @@
 ---
 title: Concepts overview
-description: What Lasso is — and what it deliberately is not.
+description: The short version of Lasso’s product model and ownership boundary.
 ---
 
-## Product category
+## The short version
 
-Lasso is an **agent-native monorepo workspace** tool.
+Lasso is an **agent-native monorepo**: one workspace where agents can discover
+repositories, create isolated worktrees, load shared skills, and preserve
+durable handoffs.
 
-It is closer in *category* to Bazel / Nx (multi-project workspace tooling) than
-to an application scaffold — but it is **not** a build system.
+The monorepo is a workspace and coordination surface, not one forced source
+tree. External repositories remain independent clones; subdirectory projects
+can remain true monorepo trees.
 
 ```text
-Nx / Bazel / Moon     →  how packages build & test
-Lasso                 →  how agents discover projects, isolate worktrees,
-                         share conventions, coordinate durably, and verify
+project identity → stable checkout → task worktree → agent execution
 ```
 
-A workspace may contain:
+## Read next
 
-- **external** projects (ordinary clones)
-- **subdir** projects (true monorepo trees)
+- [Core mechanism](/lasso/concepts/core-mechanism/) — the lifecycle from
+  `lasso init` to an isolated task surface.
+- [Extension model](/lasso/concepts/extensibility/) — how modules add
+  conventions, checks, skills, hooks, and scripts.
+- [Agent runtimes](/lasso/concepts/agent-runtimes/) — the Codex baseline and
+  thin follower adapters.
 
-## Ownership split
+## What belongs where
 
 | Concern | Owner |
 |---|---|
-| Goal, plan, review, session, memory | Agent runtime |
-| Project identity & stable checkouts | Lasso |
-| Worktree placement / GC | Lasso (state-free) |
-| Durable cross-session facts | Lasso work items |
-| Build / test / deploy / secrets | Owning project |
-| Optional capabilities | Modules |
+| Current goal, plan, review, session, memory | Agent runtime |
+| Project identity and stable checkout bootstrap | Lasso |
+| Canonical worktree placement and safe GC | Lasso, with Git as source of truth |
+| Durable facts and exceptional handoffs | Lasso work items |
+| Build, test, deploy, secrets, service health | Owning project or host |
+| Optional conventions, checks, skills, and hooks | Versioned modules |
 
-## Instance vs product
+Lasso stays useful by knowing where to stop. It creates a navigable workspace
+around project toolchains; it does not create a second build system or agent
+task runtime.
+
+## Product vs generated workspace
 
 | | |
 |---|---|
 | **Lasso** | The product (this repository) |
-| **Your fleet** | A workspace created by `lasso init` (e.g. a personal Columbus-like instance) |
+| **Your workspace** | A workspace created by `lasso init` |
 
-Change harness capability → change **lasso**.  
-Change your repos / machines / business docs → change **your workspace**.
+Change a workspace capability → change **Lasso** or add a module.
+
+Change your repositories, machines, or business docs → change **your workspace**.

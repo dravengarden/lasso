@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="website/public/lasso-logo.png" alt="Lasso logo" width="150" height="150" />
+  <img src="website/public/lasso-logo.png" alt="Lasso logo" width="132" height="132" />
 </p>
 
 <h1 align="center">Lasso</h1>
 
 <p align="center">
-  <strong>Rope repositories into an agent-native workspace.</strong><br/>
-  A thin coordination layer for project identity, checkouts, worktrees, skills, and durable handoffs.
+  <strong>An agent-native monorepo.</strong><br/>
+  One workspace for repositories, worktrees, and agent extensions.
 </p>
 
 <p align="center">
@@ -17,46 +17,160 @@
 </p>
 
 <p align="center">
-  <a href="https://dravengarden.github.io/lasso/">Documentation</a> ·
   <a href="https://dravengarden.github.io/lasso/guides/quick-start/">Quick start</a> ·
-  <a href="https://dravengarden.github.io/lasso/concepts/modules/">Modules</a> ·
+  <a href="https://dravengarden.github.io/lasso/concepts/core-mechanism/">How it works</a> ·
+  <a href="https://dravengarden.github.io/lasso/concepts/extensibility/">Extensions</a> ·
   <a href="#install">Install</a>
 </p>
 
 ---
 
-## The layer above the build system
+## What is Lasso?
 
-Bazel, Buck, Nx, and Moon own **build graphs and task runners**.  
-Lasso owns the layer **above** that for the agent era:
+Lasso is a **monorepo for agent-native development**. It gives an agent one
+workspace in which to discover repositories, create isolated worktrees, load
+shared skills, and preserve the small amount of coordination that must survive
+an individual task.
 
-| Concern | Owner |
+The repositories remain independent. Lasso does not replace their build
+systems, deployment commands, secrets, or runtime state.
+
+```text
+many repositories + one agent workspace = one navigable working surface
+```
+
+## The core mechanism
+
+Lasso is deliberately built from a small control plane. The flow is:
+
+```text
+project-defs/<name>/project.toml
+        │  identity only
+        ▼
+lasso setup
+        │  ordinary stable checkout
+        ▼
+projects/<name>/
+        │  native Git worktree operations
+        ▼
+$HOME/worktrees/<project>/<task>
+        │  agent discovers project rules and skills
+        ▼
+agent runtime executes the work
+```
+
+### 1. Declare project identity
+
+Each registered project is one small TOML file:
+
+```toml
+kind = "external"
+repo = "git@github.com:you/app.git"
+default_branch = "main"
+```
+
+The registry answers **what the repository is** and **where its stable checkout
+belongs**. It intentionally does not contain build, deploy, service-health, or
+credential configuration.
+
+### 2. Materialize a workspace
+
+`lasso init` creates the workspace contract:
+
+| File or directory | Role |
 |---|---|
-| Goal, plan, review, session, memory | Agent runtime (Codex kernel; Claude / Grok followers) |
-| Project identity, stable checkouts, worktrees | **Lasso** |
-| Durable cross-session coordination | **Lasso work items** |
-| Build, test, deploy, secrets | Owning project |
-| Optional capabilities | **Lasso modules** (add / remove) |
+| `lasso.toml` | workspace name and selected agent runtimes |
+| `lasso.lock.toml` | pinned Lasso core and module versions |
+| `project-defs/` | identity-only project registry |
+| `projects/` | ordinary stable checkouts |
+| `plugins/` | materialized Lasso plugin modules |
+| `work-items/` | durable facts for exceptional handoffs |
+| `AGENTS.md` / `CLAUDE.md` | runtime discovery and routing |
 
-One sentence:
+`lasso setup` then bootstraps registered external repositories into
+`projects/<name>/`. A stable checkout is an integration and discovery input;
+task work happens in an isolated worktree.
 
-> **Lasso ropes repos into an agent-ready monorepo workspace — registry, conventions, plugins, and verification — while each project keeps its toolchain and each agent keeps its execution state.**
+### 3. Give agents an isolated surface
 
-## Features
+`lasso worktree create <name> --project=<project>` creates a canonical task
+worktree under `$HOME/worktrees/<project>/<name>` by default. The command owns
+placement, inventory, and conservative garbage collection. Git remains the
+source of truth; Lasso does not turn a worktree into a task database.
 
-- **Project registry** — identity-only TOML (`kind`, `repo`, `default_branch`); no deploy DSL in core
-- **Stable checkouts + worktrees** — bootstrap ordinary clones; state-free worktree placement / GC
-- **Installable modules** — `lasso module add|remove` with lockfile pins and dual agent marketplaces
-- **Skills-first UX** — `lasso-init`, `lasso-add-module`, `work-item`, `verify-change`, …
-- **Multi-runtime** — Codex baseline; Claude Code & Grok Build via shared skills + thin adapters
-- **Thin core** — optional packs (docs-index, lang-*, security, …) evolve independently
+The active agent runtime still owns the live goal, plan, review, session, and
+memory. Lasso supplies the workspace around that execution kernel.
+
+## Ownership boundaries
+
+Clear ownership is the feature that keeps the workspace composable:
+
+| Layer | Lasso provides | Lasso deliberately leaves elsewhere |
+|---|---|---|
+| Agent runtime | discovery surfaces and plugins | current goal, plan, session, memory, review |
+| Lasso workspace | project identity, stable checkouts, task-worktree convention | project build graph and task runner |
+| Durable coordination | minimal work items for facts and handoffs | an agent execution state machine |
+| Owning project | — | build, test, deploy, secrets, service health |
+| Optional modules | versioned conventions, checks, skills, hooks | one giant forked core |
+
+That boundary lets Lasso work with a Go service, a Rust library, a Nix host,
+or a true subdirectory project without asking them to share a toolchain.
+
+## The extension model
+
+Lasso has an allowlisted core and an installable module catalog. A module is a
+versioned capability pack, not a patch to the CLI:
+
+```text
+modules/catalog.toml
+        │
+        │  lasso module add <id>
+        ▼
+.lasso/modules/<id>/  +  lasso.lock.toml
+        │
+        ├── conventions/       merge project conventions
+        ├── plugin/             materialize skills, hooks, and manifests
+        └── scripts/            ship deterministic helpers
+```
+
+Modules can be three things:
+
+| Kind | Use it for | Example |
+|---|---|---|
+| `convention` | language or repository guidance | `lang-rust`, `lang-nix` |
+| `capability` | deterministic checks and workspace contracts | `docs-index` |
+| `plugin` | skills, hooks, and runtime-facing workflows | `security`, `memory` |
+
+Installing a module:
+
+1. Reads its entry from `modules/catalog.toml`.
+2. Copies the payload to `.lasso/modules/<id>/`.
+3. Pins the version in `lasso.lock.toml`.
+4. Merges conventions when present.
+5. Materializes `plugins/lasso-<id>/` when it contains a plugin.
+6. Refreshes Codex and Claude-compatible marketplaces.
+
+An extension author adds a directory and a catalog entry; the core CLI does not
+need a new command for every new capability:
+
+```text
+modules/<id>/
+├── module.toml
+├── conventions/       optional guidance
+├── plugin/            optional skills + runtime manifests
+└── scripts/           optional deterministic helpers
+```
+
+The canonical skill implementation is shared. Runtime-specific manifests are
+thin discovery adapters, so adding a runtime does not require forking every
+skill.
 
 ## Install
 
 ```bash
 git clone git@github.com:dravengarden/lasso.git
 cd lasso
-just build                 # → ./bin/lasso
+just build
 export PATH="$PWD/bin:$PATH"
 export LASSO_KIT_ROOT="$PWD"
 ```
@@ -66,7 +180,7 @@ Requires Go 1.25+ (or `nix develop`).
 ## Quick start
 
 ```bash
-# 1. Create a workspace
+# Create a workspace and choose the runtimes/modules it should expose.
 lasso init ~/my-fleet \
   --name my-fleet \
   --runtime=codex,claude \
@@ -74,79 +188,58 @@ lasso init ~/my-fleet \
 
 cd ~/my-fleet
 
-# 2. Install the core plugin into your agent runtime
+# Register a repository and create its stable checkout.
+lasso project add --project=app --repo-url=git@github.com:you/app.git
+lasso setup --only=app
+
+# Create an isolated task surface.
+lasso worktree create feature-login --project=app
+```
+
+Install the core plugin through the workspace marketplace:
+
+```bash
 codex plugin marketplace add .
 codex plugin add lasso-core@lasso
 
-# Claude / Grok followers
+# Claude / Grok-compatible followers
 claude plugin marketplace add .
 claude plugin install lasso-core@lasso
-
-# 3. Register a repository
-lasso project add --project=app --repo-url=git@github.com:you/app.git
-lasso setup --only=app
 ```
 
-### Modules
+Add or remove capabilities without forking Lasso:
 
 ```bash
-lasso module list                 # kit catalog
-lasso module list --installed     # this workspace
+lasso module list
 lasso module add security
 lasso module add lang-rust
 lasso module remove security --yes
 ```
 
-Guided agent skills: `lasso-init` · `lasso-add-module` · `lasso-remove-module` · `lasso-add-language`
+## Lasso is not a build system
 
-## How it compares
+| | Build systems | Lasso |
+|---|---|---|
+| Primary object | packages and build graph | repositories and agent contracts |
+| Execution kernel | own task runner | the native agent runtime |
+| Cross-repo workflow | generators / project graph | registry, checkouts, worktrees, skills |
+| Owns builds and deploys | yes | no |
+| Extension unit | plugin or generator | versioned module |
 
-| | Bazel / Buck2 | Nx / Moon | **Lasso** |
-|---|---|---|---|
-| Primary object | Build graph | Project / task graph | **Repo graph + agent contracts** |
-| Execution kernel | Own runner | Own task runner | **Agent runtime** |
-| Cross-repo agent workflows | — | Generators / plugins | **Skills + plugins** |
-| Owns project builds | Yes | Often | **No** |
+Use Lasso above Bazel, Buck, Nx, Moon, Make, Cargo, or the project’s own
+toolchain. It makes those systems easier for an agent to find; it does not
+compete with them.
 
-## Documentation
-
-Full docs (Astro Starlight): **[dravengarden.github.io/lasso](https://dravengarden.github.io/lasso/)**
-
-| Topic | Link |
-|---|---|
-| Quick start | [guides/quick-start](https://dravengarden.github.io/lasso/guides/quick-start/) |
-| Concepts | [concepts/overview](https://dravengarden.github.io/lasso/concepts/overview/) |
-| Modules | [concepts/modules](https://dravengarden.github.io/lasso/concepts/modules/) |
-| Agent runtimes | [concepts/agent-runtimes](https://dravengarden.github.io/lasso/concepts/agent-runtimes/) |
-| Requirements | [reference/requirements](https://dravengarden.github.io/lasso/reference/requirements/) |
-
-Local preview:
-
-```bash
-cd website && npm install && npm run dev
-```
-
-## Project layout
-
-**Product (this repo)**
+## Repository layout
 
 ```text
-cmd/lasso/              CLI
-internal/               registry, modules, worktree, work-items
+cmd/lasso/              CLI entrypoint
+internal/               registry, project, worktree, module, work-item logic
 plugins/lasso-core/     installable core skills
 modules/                optional capability packs + catalog.toml
-templates/workspace/    init template
-website/                Astro Starlight docs site
-docs/                   source contracts (also published via website)
-```
-
-**Generated workspace**
-
-```text
-lasso.toml / lasso.lock.toml
-project-defs/   projects/   work-items/
-plugins/lasso-core/   .lasso/modules/
-AGENTS.md / CLAUDE.md
+templates/workspace/    generated workspace contract
+website/                Astro Starlight documentation site
+docs/                   product contracts and design notes
 ```
 
 ## Development
@@ -158,18 +251,14 @@ just verify          # format, vet, tests, skills, docs index
 just website-build   # Astro production build
 ```
 
-## Design principles
-
-1. **Codex is the execution kernel** — Claude and Grok follow via shared artifacts and thin adapters.
-2. **Core is an allowlist** — identity, checkouts, worktrees, work-items, module install.
-3. **Skills encode judgment; the CLI encodes deterministic state** — add/remove modules without forking core.
-4. **Modules evolve independently** — pin versions in `lasso.lock.toml`.
-
-See [requirements](https://dravengarden.github.io/lasso/reference/requirements/).
+Read the [core mechanism](https://dravengarden.github.io/lasso/concepts/core-mechanism/)
+and [extension model](https://dravengarden.github.io/lasso/concepts/extensibility/)
+for the detailed contract.
 
 ## Status
 
-v0.1 — usable for scaffolding workspaces and iterating on the module/skill model. APIs may still shift.
+v0.1 — usable for scaffolding workspaces and iterating on the module/skill
+model. APIs may still shift.
 
 ## License
 
