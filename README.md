@@ -5,8 +5,8 @@
 <h1 align="center">Lasso</h1>
 
 <p align="center">
-  <strong>An agent-native monorepo.</strong><br/>
-  One workspace for repositories, worktrees, and agent extensions.
+  <strong>An extensible agent-native monorepo for multi-agent, multi-repo development.</strong><br/>
+  One workspace for repositories, worktrees, plugins, and shared project constraints.
 </p>
 
 <p align="center">

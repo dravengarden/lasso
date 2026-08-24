@@ -1,0 +1,33 @@
+---
+import DefaultMobileMenuToggle from '@astrojs/starlight/components/MobileMenuToggle.astro';
+---
+
+<DefaultMobileMenuToggle />
+
+<script>
+  const controllers = document.querySelectorAll<HTMLElement>('starlight-menu-button');
+
+  for (const controller of controllers) {
+    const button = controller.querySelector<HTMLButtonElement>('button[aria-controls="starlight__sidebar"]');
+    if (!button) continue;
+
+    const syncButtonState = () => {
+      const expanded = controller.getAttribute('aria-expanded') === 'true';
+      button.setAttribute('aria-expanded', String(expanded));
+      button.setAttribute('aria-label', expanded ? 'Close menu' : 'Menu');
+    };
+
+    new MutationObserver(syncButtonState).observe(controller, {
+      attributes: true,
+      attributeFilter: ['aria-expanded'],
+    });
+    syncButtonState();
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && controller.getAttribute('aria-expanded') === 'true') {
+        button.click();
+        button.focus();
+      }
+    });
+  }
+</script>

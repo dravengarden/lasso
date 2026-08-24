@@ -10,7 +10,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Lasso',
-      description: 'An agent-native monorepo.',
+      description: 'An extensible agent-native monorepo for multi-agent, multi-repo development.',
       logo: {
         src: './src/assets/lasso-logo.png',
         alt: 'Lasso logo',
@@ -27,6 +27,9 @@ export default defineConfig({
         baseUrl: 'https://github.com/dravengarden/lasso/edit/main/website/',
       },
       customCss: ['./src/styles/custom.css'],
+      components: {
+        MobileMenuToggle: './src/components/MobileMenuToggle.astro',
+      },
       sidebar: [
         {
           label: 'Start here',
