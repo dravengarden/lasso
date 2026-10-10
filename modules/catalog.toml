@@ -55,7 +55,7 @@ skills = ["memory-sync", "memory-tidy"]
 
 [[module]]
 id = "npm-release"
-version = "0.1.1"
+version = "0.1.2"
 kind = "plugin"
 description = "Native npm release, Trusted Publisher, acceptance, and package-page workflows"
 path = "modules/npm-release"

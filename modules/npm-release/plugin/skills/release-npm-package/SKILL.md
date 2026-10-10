@@ -1,6 +1,6 @@
 ---
 name: release-npm-package
-description: Release or configure an npm package with native npm and GitHub tooling. Use for first publication, versioned npm releases, npm Trusted Publisher setup, OIDC workflow review, tarball inspection, provenance, token retirement, or fresh npm/npx/pnpm/Yarn/Bun/Deno acceptance.
+description: Release or configure an npm package with native npm and GitHub tooling. Use for first publication, versioned npm releases, npm Trusted Publisher setup, OIDC workflow review, tarball inspection, provenance, token retirement, or fresh npm/npx/pnpm/Yarn/Bun acceptance.
 ---
 
 # Release an npm package
@@ -77,7 +77,7 @@ npm view PACKAGE@VERSION name version dist.integrity dist.tarball
 npx --yes --package=PACKAGE@VERSION -- COMMAND --version
 ```
 
-When claimed by the project, also smoke-test pnpm, Yarn, Bun, or Deno through
+When claimed by the project, also smoke-test pnpm, Yarn, or Bun through
 their native one-shot command. Verify the registry tarball checksum/integrity
 against the released artifact where the project promises byte identity. Report
 build, publication, registry visibility, fresh installation, and execution as

@@ -21,7 +21,7 @@ npx --yes --package=[PACKAGE_NAME] -- [COMMAND] --version
 ```
 
 <!-- Keep only verified alternatives. Examples may include pnpm dlx/pnpx,
-Yarn dlx, Bun bunx, or Deno x when the package actually supports them. -->
+Yarn dlx, or Bun bunx when the package actually supports them. -->
 
 ## How it works
 

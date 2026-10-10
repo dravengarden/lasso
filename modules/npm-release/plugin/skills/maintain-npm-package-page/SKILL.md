@@ -1,6 +1,6 @@
 ---
 name: maintain-npm-package-page
-description: Create or refresh a project-owned npm package README and npmjs.com landing page for a CLI package. Use when install commands, npx/pnpm/Yarn/Bun/Deno usage, executable names, architecture, modes, platform support, security boundaries, or registry links need clearer documentation.
+description: Create or refresh a project-owned npm package README and npmjs.com landing page for a CLI package. Use when install commands, npx/pnpm/Yarn/Bun usage, executable names, architecture, modes, platform support, security boundaries, or registry links need clearer documentation.
 ---
 
 # Maintain an npm package page
@@ -26,7 +26,6 @@ testing them against the published package:
 - pnpm: `pnpm add --global`, `pnpm dlx`, or `pnpx`;
 - Yarn: `yarn dlx`;
 - Bun: `bun add --global` or `bunx`;
-- Deno: `deno x` with an npm package specifier when compatible.
 
 Do not imply that every JavaScript runtime supports Node APIs, lifecycle
 scripts, native binaries, or the same cache/permission model. Keep only commands
