@@ -4,9 +4,9 @@ Astro + [Starlight](https://starlight.astro.build/) site published to GitHub Pag
 
 ```bash
 cd website
-npm install
-npm run dev      # http://localhost:4321/lasso/
-npm run build    # → dist/
+corepack pnpm install
+corepack pnpm run dev      # http://localhost:4321/lasso/
+corepack pnpm run build    # → dist/
 ```
 
 Production URL: https://dravengarden.github.io/lasso/

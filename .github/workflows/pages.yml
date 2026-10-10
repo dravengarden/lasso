@@ -26,14 +26,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
-          cache-dependency-path: website/package-lock.json
 
       - name: Install and build
         working-directory: website
         run: |
-          npm ci
-          npm run build
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm run build
 
       - uses: actions/upload-pages-artifact@v3
         with:

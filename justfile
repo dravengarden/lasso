@@ -31,16 +31,16 @@ verify: format-check lint test docs-index-check
 
 # Documentation site (Astro Starlight)
 website-install:
-    cd website && npm install
+    cd website && corepack pnpm install
 
 website-dev:
-    cd website && npm run dev
+    cd website && corepack pnpm run dev
 
 website-build:
-    cd website && npm run build
+    cd website && corepack pnpm run build
 
 website-preview:
-    cd website && npm run preview
+    cd website && corepack pnpm run preview
 
 doctor:
     command -v go
