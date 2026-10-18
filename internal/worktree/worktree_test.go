@@ -163,6 +163,79 @@ func TestRemoveRefusesDirtyAndUnmerged(t *testing.T) {
 	}
 }
 
+func TestGCProtectsIgnoredContentAndLocks(t *testing.T) {
+	ctx := context.Background()
+	f := newWorktreeFixture(t)
+	ignored, _, err := Create(ctx, f.repo, f.wtRoot, "alpha", "ignored", CreateOptions{From: "origin/main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(f.repo, ".git", "info", "exclude"), []byte("private-data\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ignored, "private-data"), []byte("irreplaceable"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	locked, _, err := Create(ctx, f.repo, f.wtRoot, "alpha", "locked", CreateOptions{From: "origin/main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	runGit(t, f.repo, "worktree", "lock", locked)
+	actions, err := RunGC(ctx, f.wtRoot, f.repos(), "", GCOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, reason := range map[string]string{"ignored": "skip: ignored content", "locked": "skip: locked"} {
+		if got := gotByEntry(actions, "alpha/"+name); got != reason {
+			t.Fatalf("%s: got %q, want %q", name, got, reason)
+		}
+		if _, err := os.Stat(CanonicalPath(f.wtRoot, "alpha", name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Even an uninitialized gitlink is excluded: GC is not a submodule owner.
+	head, err := exec.Command("git", "-C", f.repo, "rev-parse", "HEAD").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runGit(t, locked, "update-index", "--add", "--cacheinfo", "160000,"+strings.TrimSpace(string(head))+",module")
+	if got := gcContentGuard(ctx, locked); got != "skip: submodules" {
+		t.Fatalf("submodule guard = %q", got)
+	}
+}
+
+func TestRunGCReturnsPartialFailures(t *testing.T) {
+	ctx := context.Background()
+	f := newWorktreeFixture(t)
+	// Inventory can contain a nested task from an older placement convention.
+	// Remove cannot address it; the other valid task must still be processed.
+	bad := filepath.Join(f.wtRoot, "alpha", "nested", "task")
+	runGit(t, f.repo, "worktree", "add", "-b", "bad", bad, "origin/main")
+	good, _, err := Create(ctx, f.repo, f.wtRoot, "alpha", "good", CreateOptions{From: "origin/main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	actions, err := RunGC(ctx, f.wtRoot, f.repos(), "", GCOptions{})
+	if err == nil || !strings.Contains(err.Error(), "invalid worktree name") {
+		t.Fatalf("missing partial failure: %v", err)
+	}
+	if !strings.HasPrefix(gotByEntry(actions, "alpha/nested/task"), "failed:") {
+		t.Fatalf("missing failure outcome: %+v", actions)
+	}
+	if _, err := os.Stat(good); !os.IsNotExist(err) {
+		t.Fatal("valid removal did not complete")
+	}
+	if _, err := os.Stat(bad); err != nil {
+		t.Fatal("unsupported path was removed")
+	}
+}
+
+func TestUnreadableGitStateIsDirty(t *testing.T) {
+	if !isDirty(context.Background(), t.TempDir()) {
+		t.Fatal("failed git status must not be treated as clean")
+	}
+}
+
 func TestPlanAndRunGC(t *testing.T) {
 	ctx := context.Background()
 	fixture := newWorktreeFixture(t)

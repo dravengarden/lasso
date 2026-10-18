@@ -66,6 +66,7 @@ type Entry struct {
 	Merged        bool   `json:"merged"`
 	AgeDays       int    `json:"age_days"`
 	DefaultBranch string `json:"default_branch"`
+	Locked        bool   `json:"locked"`
 }
 
 // Repo is a registered repository to scan. Project is the display owner;
@@ -268,6 +269,7 @@ func List(ctx context.Context, root string, repos []Repo, project string) ([]Ent
 				Merged:        isMerged(ctx, repo.Repo, raw.Branch, repo.DefaultBranch),
 				AgeDays:       ageDays(raw.Path),
 				DefaultBranch: repo.DefaultBranch,
+				Locked:        raw.Locked,
 			})
 		}
 	}
@@ -350,10 +352,16 @@ func PlanGC(ctx context.Context, root string, repos []Repo, project string, opts
 			actions = append(actions, Action{Entry: e, Action: "skip: dirty"})
 		case !e.Merged:
 			actions = append(actions, Action{Entry: e, Action: "skip: unmerged"})
+		case e.Locked:
+			actions = append(actions, Action{Entry: e, Action: "skip: locked"})
 		case time.Duration(e.AgeDays)*24*time.Hour < opts.MinAge:
 			actions = append(actions, Action{Entry: e, Action: "skip: too young"})
 		default:
-			actions = append(actions, Action{Entry: e, Action: "remove"})
+			reason := gcContentGuard(ctx, e.Path)
+			if reason == "" {
+				reason = "remove"
+			}
+			actions = append(actions, Action{Entry: e, Action: reason})
 		}
 	}
 	return actions, nil
@@ -366,23 +374,55 @@ func RunGC(ctx context.Context, root string, repos []Repo, project string, opts 
 	if err != nil {
 		return nil, err
 	}
+	var failures []error
 	for i := range actions {
 		if actions[i].Action != "remove" {
+			continue
+		}
+		// Recheck ignored content before Remove: Git deliberately ignores it
+		// when deciding whether a worktree is clean enough to delete.
+		if reason := gcContentGuard(ctx, actions[i].Entry.Path); reason != "" {
+			actions[i].Action = reason
 			continue
 		}
 		if err := Remove(ctx, actions[i].Entry.Repo, actions[i].Entry.DefaultBranch, root,
 			actions[i].Entry.Project, actions[i].Entry.Name,
 			RemoveOptions{DeleteBranch: opts.DeleteBranch}); err != nil {
 			actions[i].Action = "failed: " + err.Error()
+			failures = append(failures, fmt.Errorf("%s/%s: %w", actions[i].Entry.Project, actions[i].Entry.Name, err))
 		}
 	}
-	return actions, nil
+	return actions, errors.Join(failures...)
+}
+
+// GC has no knowledge of build artifacts or live runtime ownership. Ignored
+// files may be unique user data; only an explicit lifecycle owner may retire
+// them. Submodule worktrees need their own teardown and are never forced.
+func gcContentGuard(ctx context.Context, path string) string {
+	ignored, err := gitx.Out(ctx, path, "git", "ls-files", "--others", "--ignored", "--exclude-standard", "--directory")
+	if err != nil {
+		return "skip: cannot inspect ignored files"
+	}
+	if ignored != "" {
+		return "skip: ignored content"
+	}
+	files, err := gitx.Out(ctx, path, "git", "ls-files", "--stage")
+	if err != nil {
+		return "skip: cannot inspect submodules"
+	}
+	for _, line := range strings.Split(files, "\n") {
+		if strings.HasPrefix(line, "160000 ") {
+			return "skip: submodules"
+		}
+	}
+	return ""
 }
 
 type rawEntry struct {
 	Path   string
 	Head   string
 	Branch string
+	Locked bool
 }
 
 func parsePorcelain(out string) []rawEntry {
@@ -391,6 +431,8 @@ func parsePorcelain(out string) []rawEntry {
 		var e rawEntry
 		for _, line := range strings.Split(block, "\n") {
 			switch {
+			case line == "locked" || strings.HasPrefix(line, "locked "):
+				e.Locked = true
 			case strings.HasPrefix(line, "worktree "):
 				e.Path = strings.TrimSpace(strings.TrimPrefix(line, "worktree "))
 			case strings.HasPrefix(line, "HEAD "):
@@ -455,7 +497,7 @@ func currentBranch(ctx context.Context, path string) string {
 
 func isDirty(ctx context.Context, path string) bool {
 	out, err := gitx.Out(ctx, path, "git", "status", "--porcelain=v1", "--untracked-files=normal")
-	return err == nil && out != ""
+	return err != nil || out != ""
 }
 
 func isMerged(ctx context.Context, repo, branch, defaultBranch string) bool {

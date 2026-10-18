@@ -218,7 +218,9 @@ func worktreeGcCmd() *cobra.Command {
 		Long: `Plan or remove canonical task worktrees whose branch is already merged
 into origin/<default-branch>, whose checkout is clean, and whose age exceeds
 --min-age. Without --yes this is a dry run. Sessions and stable checkouts are
-never candidates.`,
+never candidates. Locked trees, submodules, and ignored content are preserved.
+Stop the owning task before applying GC; this command cannot establish runtime
+inactivity. Partial removal failures are printed and return a nonzero status.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			registry, root, err := config.Load()
@@ -247,9 +249,6 @@ never candidates.`,
 			} else {
 				actions, err = worktree.PlanGC(cmd.Context(), wtRoot, repos, projectName, opts)
 			}
-			if err != nil {
-				return err
-			}
 			for _, action := range actions {
 				switch action.Action {
 				case "remove":
@@ -261,7 +260,7 @@ never candidates.`,
 			if !yes {
 				ui.Dimf("dry run: pass --yes to remove the %q entries", "remove")
 			}
-			return nil
+			return err
 		},
 	}
 	c.Flags().StringVar(&projectName, "project", "", "limit GC to one registered project")
