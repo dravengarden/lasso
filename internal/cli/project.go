@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -443,7 +444,7 @@ func projectPathCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("load config: %w", err)
 			}
-			path, err := registry.CheckoutDir(root, args[0])
+			path, err := projectCheckoutPath(cmd.Context(), registry, root, args[0])
 			if err != nil {
 				return err
 			}
@@ -452,6 +453,29 @@ func projectPathCmd() *cobra.Command {
 		},
 	}
 	return c
+}
+
+// projectCheckoutPath resolves a project's stable checkout. Inside a linked
+// workspace worktree an external project's clone is found under the main
+// worktree; subdir projects stay in the current worktree, whose committed
+// content is the one being edited.
+func projectCheckoutPath(ctx context.Context, registry *config.Root, root, name string) (string, error) {
+	path, err := registry.CheckoutDir(root, name)
+	if err == nil {
+		return path, nil
+	}
+	registered, getErr := registry.MustGet(name)
+	if getErr != nil || !registered.IsExternal() {
+		return "", err
+	}
+	mainRoot := workspaceMainRoot(ctx, root)
+	if mainRoot == root {
+		return "", err
+	}
+	if mainPath, mainErr := registry.CheckoutDir(mainRoot, name); mainErr == nil {
+		return mainPath, nil
+	}
+	return "", err
 }
 
 // rowOf is a tiny helper since go-pretty wants table.Row ([]any).

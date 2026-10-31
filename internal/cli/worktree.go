@@ -3,7 +3,6 @@ package cli
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -271,10 +270,7 @@ inactivity. Partial removal failures are printed and return a nonzero status.`,
 }
 
 func worktreeRepoFor(ctx context.Context, registry *config.Root, root, projectName string) (worktree.Repo, error) {
-	mainRoot := root
-	if main, err := mainWorktreePath(ctx, root); err == nil && main != "" {
-		mainRoot = main
-	}
+	mainRoot := workspaceMainRoot(ctx, root)
 	if projectName == "lasso" {
 		return worktree.Repo{
 			Project:       "lasso",
@@ -292,13 +288,7 @@ func worktreeRepoFor(ctx context.Context, registry *config.Root, root, projectNa
 		branch = "main"
 	}
 	if p.IsExternal() {
-		stable := registry.ProjectDir(root, projectName)
-		if !isNormalCheckout(stable) {
-			candidate := filepath.Join(mainRoot, config.ProjectsRoot, projectName)
-			if isNormalCheckout(candidate) {
-				stable = candidate
-			}
-		}
+		stable := stableCheckoutDir(registry, root, mainRoot, projectName)
 		if !isNormalCheckout(stable) {
 			return worktree.Repo{}, fmt.Errorf("%s has no stable checkout; run `lasso setup --only=%s`", projectName, projectName)
 		}
@@ -308,10 +298,7 @@ func worktreeRepoFor(ctx context.Context, registry *config.Root, root, projectNa
 }
 
 func allWorktreeRepos(ctx context.Context, registry *config.Root, root string) []worktree.Repo {
-	mainRoot := root
-	if main, err := mainWorktreePath(ctx, root); err == nil && main != "" {
-		mainRoot = main
-	}
+	mainRoot := workspaceMainRoot(ctx, root)
 	repos := []worktree.Repo{{
 		Project:       "lasso",
 		Repo:          root,
@@ -323,13 +310,7 @@ func allWorktreeRepos(ctx context.Context, registry *config.Root, root string) [
 		if !p.IsExternal() {
 			continue
 		}
-		stable := registry.ProjectDir(root, name)
-		if !isNormalCheckout(stable) {
-			candidate := filepath.Join(mainRoot, config.ProjectsRoot, name)
-			if isNormalCheckout(candidate) {
-				stable = candidate
-			}
-		}
+		stable := stableCheckoutDir(registry, root, mainRoot, name)
 		if !isNormalCheckout(stable) {
 			continue
 		}
@@ -350,6 +331,29 @@ func allWorktreeRepos(ctx context.Context, registry *config.Root, root string) [
 // mainWorktreePath returns the main checkout of a repository, even when root
 // is a linked worktree. For linked worktrees, --git-common-dir points at the
 // main repository's .git directory; for a main checkout it is <root>/.git.
+// stableCheckoutDir resolves an external project's stable clone. A linked
+// task or session worktree of the workspace carries the registry but not the
+// ordinary clones, which exist only under the main worktree's projects/.
+func stableCheckoutDir(registry *config.Root, root, mainRoot, name string) string {
+	stable := registry.ProjectDir(root, name)
+	if isNormalCheckout(stable) {
+		return stable
+	}
+	if candidate := registry.ProjectDir(mainRoot, name); isNormalCheckout(candidate) {
+		return candidate
+	}
+	return stable
+}
+
+// workspaceMainRoot returns the main worktree of the workspace repository, or
+// root itself when root is the main worktree or not a Git checkout.
+func workspaceMainRoot(ctx context.Context, root string) string {
+	if main, err := mainWorktreePath(ctx, root); err == nil && main != "" {
+		return main
+	}
+	return root
+}
+
 func mainWorktreePath(ctx context.Context, repo string) (string, error) {
 	common, err := gitx.Out(ctx, repo, "git", "rev-parse", "--path-format=absolute", "--git-common-dir")
 	if err != nil {
