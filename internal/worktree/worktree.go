@@ -101,12 +101,51 @@ type RemoveOptions struct {
 
 // GCOptions controls PlanGC / RunGC.
 type GCOptions struct {
-	// MinAge is the minimum worktree age (modification time) accepted for
-	// automatic removal. Zero means no age requirement; the CLI layer owns
+	// MinAge is the minimum idle time accepted for automatic removal: the time
+	// since the newest change to the worktree root, its Git metadata (index,
+	// HEAD, reflog) or any tracked or untracked non-ignored file. Zero means no age requirement; the CLI layer owns
 	// the user-facing default.
 	MinAge time.Duration
 	// DeleteBranch passes through to Remove after a successful removal.
 	DeleteBranch bool
+	// PruneRegenerable accepts ignored content when every ignored entry is a
+	// regenerable dependency or build cache directory (RegenerableDirs).
+	// Other ignored files still preserve the worktree.
+	PruneRegenerable bool
+}
+
+// RegenerableDirs are ignored directory names whose contents a package manager
+// or compiler recreates from tracked sources. Build outputs such as dist/ are
+// deliberately absent: they can hold evidence that is not rebuilt.
+var RegenerableDirs = map[string]bool{
+	"node_modules":  true,
+	"target":        true,
+	"__pycache__":   true,
+	".pytest_cache": true,
+	".mypy_cache":   true,
+	".ruff_cache":   true,
+	".rumdl_cache":  true,
+	".turbo":        true,
+	".next":         true,
+	".wrangler":     true,
+	".worker-tools": true,
+	"site-dist":     true,
+}
+
+// nixOutLink matches `nix build` out-links (result, result-web, ...). They
+// are garbage-collector roots into /nix/store, never workspace content.
+var nixOutLink = regexp.MustCompile(`^result(-[A-Za-z0-9._+-]+)?$`)
+
+func isNixOutLink(path string) bool {
+	if !nixOutLink.MatchString(filepath.Base(path)) {
+		return false
+	}
+	info, err := os.Lstat(path)
+	if err != nil || info.Mode()&os.ModeSymlink == 0 {
+		return false
+	}
+	target, err := os.Readlink(path)
+	return err == nil && strings.HasPrefix(target, "/nix/store/")
 }
 
 // Action is one GC decision for a task worktree.
@@ -342,6 +381,7 @@ func PlanGC(ctx context.Context, root string, repos []Repo, project string, opts
 	if err != nil {
 		return nil, err
 	}
+	live := liveProcessPaths()
 	actions := make([]Action, 0)
 	for _, e := range entries {
 		if e.Kind != KindTask {
@@ -356,8 +396,10 @@ func PlanGC(ctx context.Context, root string, repos []Repo, project string, opts
 			actions = append(actions, Action{Entry: e, Action: "skip: locked"})
 		case time.Duration(e.AgeDays)*24*time.Hour < opts.MinAge:
 			actions = append(actions, Action{Entry: e, Action: "skip: too young"})
+		case inUse(live, e.Path):
+			actions = append(actions, Action{Entry: e, Action: "skip: in use"})
 		default:
-			reason := gcContentGuard(ctx, e.Path)
+			reason := gcContentGuard(ctx, e.Path, opts.PruneRegenerable)
 			if reason == "" {
 				reason = "remove"
 			}
@@ -381,7 +423,7 @@ func RunGC(ctx context.Context, root string, repos []Repo, project string, opts 
 		}
 		// Recheck ignored content before Remove: Git deliberately ignores it
 		// when deciding whether a worktree is clean enough to delete.
-		if reason := gcContentGuard(ctx, actions[i].Entry.Path); reason != "" {
+		if reason := gcContentGuard(ctx, actions[i].Entry.Path, opts.PruneRegenerable); reason != "" {
 			actions[i].Action = reason
 			continue
 		}
@@ -398,12 +440,12 @@ func RunGC(ctx context.Context, root string, repos []Repo, project string, opts 
 // GC has no knowledge of build artifacts or live runtime ownership. Ignored
 // files may be unique user data; only an explicit lifecycle owner may retire
 // them. Submodule worktrees need their own teardown and are never forced.
-func gcContentGuard(ctx context.Context, path string) string {
+func gcContentGuard(ctx context.Context, path string, pruneRegenerable bool) string {
 	ignored, err := gitx.Out(ctx, path, "git", "ls-files", "--others", "--ignored", "--exclude-standard", "--directory")
 	if err != nil {
 		return "skip: cannot inspect ignored files"
 	}
-	if ignored != "" {
+	if ignored != "" && !(pruneRegenerable && onlyRegenerable(path, ignored)) {
 		return "skip: ignored content"
 	}
 	files, err := gitx.Out(ctx, path, "git", "ls-files", "--stage")
@@ -500,6 +542,9 @@ func isDirty(ctx context.Context, path string) bool {
 	return err != nil || out != ""
 }
 
+// isMerged reports whether every change on branch is already in
+// origin/<defaultBranch>: either the branch is an ancestor, or merging it
+// would leave the upstream tree unchanged (squash or rebase merges).
 func isMerged(ctx context.Context, repo, branch, defaultBranch string) bool {
 	if branch == "" || defaultBranch == "" {
 		return false
@@ -508,15 +553,103 @@ func isMerged(ctx context.Context, repo, branch, defaultBranch string) bool {
 	if !gitx.RefExists(ctx, repo, upstream) {
 		return false
 	}
-	_, err := gitx.Out(ctx, repo, "git", "merge-base", "--is-ancestor",
-		"refs/heads/"+branch, upstream)
-	return err == nil
+	local := "refs/heads/" + branch
+	if _, err := gitx.Out(ctx, repo, "git", "merge-base", "--is-ancestor", local, upstream); err == nil {
+		return true
+	}
+	// Tree equivalence only counts for a branch that changed files: an empty
+	// or self-cancelling branch still carries commits upstream never saw.
+	base, err := gitx.Out(ctx, repo, "git", "merge-base", upstream, local)
+	if err != nil {
+		return false
+	}
+	treeOf := func(rev string) string {
+		out, err := gitx.Out(ctx, repo, "git", "rev-parse", strings.TrimSpace(rev)+"^{tree}")
+		if err != nil {
+			return ""
+		}
+		return strings.TrimSpace(out)
+	}
+	branchTree, baseTree, upstreamTree := treeOf(local), treeOf(base), treeOf(upstream)
+	if branchTree == "" || upstreamTree == "" || branchTree == baseTree {
+		return false
+	}
+	merged, err := gitx.Out(ctx, repo, "git", "merge-tree", "--write-tree", upstream, local)
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(strings.SplitN(merged, "\n", 2)[0]) == upstreamTree
 }
 
+// onlyRegenerable reports whether every `ls-files --ignored --directory`
+// entry under root is a RegenerableDirs directory. Git also lists an untracked
+// directory holding only ignored content (web/ around web/node_modules/); such
+// a directory qualifies only when each file in it lies below a regenerable
+// directory.
+func onlyRegenerable(root, ignored string) bool {
+	for _, line := range strings.Split(strings.TrimSpace(ignored), "\n") {
+		if !strings.HasSuffix(line, "/") {
+			if isNixOutLink(filepath.Join(root, line)) {
+				continue
+			}
+			return false
+		}
+		entry := strings.TrimSuffix(line, "/")
+		if RegenerableDirs[filepath.Base(entry)] {
+			continue
+		}
+		ok := true
+		err := filepath.WalkDir(filepath.Join(root, entry), func(p string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				if RegenerableDirs[d.Name()] {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			ok = false
+			return filepath.SkipAll
+		})
+		if err != nil || !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// ageDays is the idle time in days: since the newest modification of the
+// worktree root, its Git metadata, or any tracked or untracked non-ignored
+// file. Ignored dependency and build caches do not count as activity.
 func ageDays(path string) int {
 	info, err := os.Stat(path)
 	if err != nil {
 		return 0
 	}
-	return int(time.Since(info.ModTime()).Hours() / 24)
+	newest := info.ModTime()
+	consider := func(candidate string) {
+		if info, err := os.Lstat(candidate); err == nil && info.ModTime().After(newest) {
+			newest = info.ModTime()
+		}
+	}
+	ctx := context.Background()
+	if gitDir, err := gitx.Out(ctx, path, "git", "rev-parse", "--absolute-git-dir"); err == nil {
+		gitDir = strings.TrimSpace(gitDir)
+		for _, name := range []string{"index", "HEAD", filepath.Join("logs", "HEAD")} {
+			consider(filepath.Join(gitDir, name))
+		}
+	} else {
+		return 0
+	}
+	files, err := gitx.Out(ctx, path, "git", "ls-files", "-z", "--cached", "--others", "--exclude-standard")
+	if err != nil {
+		return 0
+	}
+	for _, name := range strings.Split(files, "\x00") {
+		if name != "" {
+			consider(filepath.Join(path, name))
+		}
+	}
+	return int(time.Since(newest).Hours() / 24)
 }

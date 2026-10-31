@@ -209,17 +209,23 @@ func worktreeGcCmd() *cobra.Command {
 		projectName  string
 		minAge       time.Duration
 		deleteBranch bool
+		regenerable  bool
 		yes          bool
 	)
 	c := &cobra.Command{
 		Use:   "gc",
 		Short: "Garbage-collect clean, merged, aged canonical task worktrees",
 		Long: `Plan or remove canonical task worktrees whose branch is already merged
-into origin/<default-branch>, whose checkout is clean, and whose age exceeds
---min-age. Without --yes this is a dry run. Sessions and stable checkouts are
-never candidates. Locked trees, submodules, and ignored content are preserved.
-Stop the owning task before applying GC; this command cannot establish runtime
-inactivity. Partial removal failures are printed and return a nonzero status.`,
+into origin/<default-branch> (as an ancestor, or with every change already in
+its tree after a squash or rebase merge), whose checkout is clean, and whose
+idle time exceeds --min-age. Idle time counts the worktree root, its Git index,
+HEAD and reflog, and every tracked or untracked non-ignored file. Without --yes
+this is a dry run. Sessions and stable checkouts are never candidates. Locked
+trees, submodules, trees a live process uses as cwd or holds open (where /proc
+is available), and ignored content are preserved; --prune-regenerable accepts
+ignored content made only of dependency and build cache directories
+(node_modules, target, __pycache__ and similar). Stop the owning task before
+applying GC. Partial removal failures are printed and return a nonzero status.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			registry, root, err := config.Load()
@@ -240,7 +246,7 @@ inactivity. Partial removal failures are printed and return a nonzero status.`,
 			} else {
 				repos = allWorktreeRepos(cmd.Context(), registry, root)
 			}
-			opts := worktree.GCOptions{MinAge: minAge, DeleteBranch: deleteBranch}
+			opts := worktree.GCOptions{MinAge: minAge, DeleteBranch: deleteBranch, PruneRegenerable: regenerable}
 
 			var actions []worktree.Action
 			if yes {
@@ -263,6 +269,7 @@ inactivity. Partial removal failures are printed and return a nonzero status.`,
 		},
 	}
 	c.Flags().StringVar(&projectName, "project", "", "limit GC to one registered project")
+	c.Flags().BoolVar(&regenerable, "prune-regenerable", false, "accept ignored content made only of dependency and build cache directories")
 	c.Flags().DurationVar(&minAge, "min-age", 24*time.Hour, "minimum worktree age accepted for removal")
 	c.Flags().BoolVar(&deleteBranch, "delete-branch", false, "delete the local branch after removing the worktree")
 	c.Flags().BoolVar(&yes, "yes", false, "actually remove instead of dry-run")

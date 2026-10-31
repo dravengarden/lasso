@@ -199,7 +199,7 @@ func TestGCProtectsIgnoredContentAndLocks(t *testing.T) {
 		t.Fatal(err)
 	}
 	runGit(t, locked, "update-index", "--add", "--cacheinfo", "160000,"+strings.TrimSpace(string(head))+",module")
-	if got := gcContentGuard(ctx, locked); got != "skip: submodules" {
+	if got := gcContentGuard(ctx, locked, false); got != "skip: submodules" {
 		t.Fatalf("submodule guard = %q", got)
 	}
 }
