@@ -216,11 +216,11 @@ func TestRunGCReturnsPartialFailures(t *testing.T) {
 		t.Fatal(err)
 	}
 	actions, err := RunGC(ctx, f.wtRoot, f.repos(), "", GCOptions{})
-	if err == nil || !strings.Contains(err.Error(), "invalid worktree name") {
-		t.Fatalf("missing partial failure: %v", err)
+	if err != nil {
+		t.Fatalf("unaddressable nested tree must not fail the pass: %v", err)
 	}
-	if !strings.HasPrefix(gotByEntry(actions, "alpha/nested/task"), "failed:") {
-		t.Fatalf("missing failure outcome: %+v", actions)
+	if got := gotByEntry(actions, "alpha/nested/task"); got != "skip: unsupported path" {
+		t.Fatalf("nested tree outcome = %q (%+v)", got, actions)
 	}
 	if _, err := os.Stat(good); !os.IsNotExist(err) {
 		t.Fatal("valid removal did not complete")

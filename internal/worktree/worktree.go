@@ -389,6 +389,11 @@ func PlanGC(ctx context.Context, root string, repos []Repo, project string, opts
 			continue
 		}
 		switch {
+		case ValidateName(e.Name) != nil:
+			// A tree nested below another task (for example a build checkout
+			// another repository created inside it) is not addressable by
+			// Remove; report it instead of failing every pass.
+			actions = append(actions, Action{Entry: e, Action: "skip: unsupported path"})
 		case e.Dirty:
 			actions = append(actions, Action{Entry: e, Action: "skip: dirty"})
 		case !e.Merged:
