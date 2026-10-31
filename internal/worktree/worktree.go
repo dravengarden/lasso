@@ -305,7 +305,7 @@ func List(ctx context.Context, root string, repos []Repo, project string) ([]Ent
 				Branch:        raw.Branch,
 				Head:          raw.Head,
 				Dirty:         isDirty(ctx, raw.Path),
-				Merged:        isMerged(ctx, repo.Repo, raw.Branch, repo.DefaultBranch),
+				Merged:        isMerged(ctx, repo.Repo, raw.Branch, raw.Head, repo.DefaultBranch),
 				AgeDays:       ageDays(raw.Path),
 				DefaultBranch: repo.DefaultBranch,
 				Locked:        raw.Locked,
@@ -338,7 +338,8 @@ func Remove(ctx context.Context, repo, defaultBranch, root, project, name string
 
 	branch := currentBranch(ctx, path)
 	dirty := isDirty(ctx, path)
-	merged := isMerged(ctx, repo, branch, defaultBranch)
+	head, _ := gitx.Out(ctx, path, "git", "rev-parse", "HEAD")
+	merged := isMerged(ctx, repo, branch, strings.TrimSpace(head), defaultBranch)
 	if dirty && !opts.Force {
 		return fmt.Errorf("worktree %s has uncommitted changes; pass --force to discard them", name)
 	}
@@ -542,18 +543,27 @@ func isDirty(ctx context.Context, path string) bool {
 	return err != nil || out != ""
 }
 
+var commitID = regexp.MustCompile(`^[0-9a-f]{40}([0-9a-f]{24})?$`)
+
 // isMerged reports whether every change on branch is already in
 // origin/<defaultBranch>: either the branch is an ancestor, or merging it
-// would leave the upstream tree unchanged (squash or rebase merges).
-func isMerged(ctx context.Context, repo, branch, defaultBranch string) bool {
-	if branch == "" || defaultBranch == "" {
+// would leave the upstream tree unchanged (squash or rebase merges). A
+// detached worktree (no branch) is judged by its HEAD commit.
+func isMerged(ctx context.Context, repo, branch, head, defaultBranch string) bool {
+	if defaultBranch == "" {
 		return false
+	}
+	local := "refs/heads/" + branch
+	if branch == "" {
+		if !commitID.MatchString(head) {
+			return false
+		}
+		local = head
 	}
 	upstream := "refs/remotes/origin/" + defaultBranch
 	if !gitx.RefExists(ctx, repo, upstream) {
 		return false
 	}
-	local := "refs/heads/" + branch
 	if _, err := gitx.Out(ctx, repo, "git", "merge-base", "--is-ancestor", local, upstream); err == nil {
 		return true
 	}

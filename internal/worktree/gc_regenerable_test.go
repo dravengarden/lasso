@@ -48,7 +48,7 @@ func TestSquashMergedBranchIsMerged(t *testing.T) {
 	}
 	commitFile(t, path, "a.txt", "one\n", "first")
 	commitFile(t, path, "b.txt", "two\n", "second")
-	if isMerged(ctx, f.repo, "codex/squashed", "main") {
+	if isMerged(ctx, f.repo, "codex/squashed", "", "main") {
 		t.Fatal("unmerged branch reported merged")
 	}
 	// Upstream lands the same change as one squashed commit.
@@ -56,12 +56,12 @@ func TestSquashMergedBranchIsMerged(t *testing.T) {
 	commitFile(t, f.writer, "b.txt", "two\n", "squash")
 	runGit(t, f.writer, "push", "origin", "main")
 	runGit(t, f.repo, "fetch", "origin")
-	if !isMerged(ctx, f.repo, "codex/squashed", "main") {
+	if !isMerged(ctx, f.repo, "codex/squashed", "", "main") {
 		t.Fatal("squash-merged branch reported unmerged")
 	}
 	// A branch with a change upstream lacks stays unmerged.
 	commitFile(t, path, "c.txt", "three\n", "third")
-	if isMerged(ctx, f.repo, "codex/squashed", "main") {
+	if isMerged(ctx, f.repo, "codex/squashed", "", "main") {
 		t.Fatal("branch with an unlanded change reported merged")
 	}
 }
@@ -195,5 +195,28 @@ func TestNixOutLinksAndSiteBuildsAreRegenerable(t *testing.T) {
 	}
 	if onlyRegenerable(root, "dist/\n") {
 		t.Fatal("dist can hold evidence and must stay protected")
+	}
+}
+
+func TestDetachedWorktreeIsJudgedByHead(t *testing.T) {
+	ctx := context.Background()
+	f := newWorktreeFixture(t)
+	contained := filepath.Join(f.wtRoot, "alpha", "detached")
+	runGit(t, f.repo, "worktree", "add", "--detach", contained, "origin/main")
+	ahead := filepath.Join(f.wtRoot, "alpha", "detached-ahead")
+	runGit(t, f.repo, "worktree", "add", "--detach", ahead, "origin/main")
+	commitFile(t, ahead, "new.txt", "unlanded\n", "unlanded")
+	done, err := RunGC(ctx, f.wtRoot, f.repos(), "", GCOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := gotByEntry(done, "alpha/detached"); got != "remove" {
+		t.Fatalf("detached contained worktree = %q", got)
+	}
+	if got := gotByEntry(done, "alpha/detached-ahead"); got != "skip: unmerged" {
+		t.Fatalf("detached worktree with an unlanded commit = %q", got)
+	}
+	if _, err := os.Stat(ahead); err != nil {
+		t.Fatal("detached worktree with an unlanded commit was removed")
 	}
 }
