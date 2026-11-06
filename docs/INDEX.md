@@ -28,6 +28,7 @@ Instance-specific fleet docs (machines, business projects) do not live here.
 
 ## Design
 
+- [`design/instance-patterns.md`](design/instance-patterns.md)
 - [`design/columbus-on-lasso.md`](design/columbus-on-lasso.md)
 - [`design/registry-release-modules.md`](design/registry-release-modules.md)
 

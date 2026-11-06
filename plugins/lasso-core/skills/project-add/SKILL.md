@@ -24,11 +24,13 @@ disable-model-invocation: true
    Use `--no-clone` only for an intentional registry-only add.
 5. Inspect the generated `project-defs/$NAME/project.toml` and stable checkout. Project
    documentation belongs to the registered repository and is not scaffolded by
-   this command. When the checkout contains a `docs/` tree, Lasso's
-   `just docs-index-check` validates its shared index shape and coverage, while
-   the project owns the content and commits. Run `just verify` in Lasso;
-   project setup and verification remain project-owned.
-6. For a Lasso-owned repository, classify its agent surfaces under CR-7:
+   this command. Run the workspace's owning registry gate in the workspace
+   containing the change. Run a docs-index gate only where it is installed and
+   required; project documentation, setup, verification, and commits remain
+   project-owned. Do not run the Lasso product gate as a substitute for checking
+   an instance's registry change.
+6. For a workspace-owned repository, classify runtime-dependent surfaces as
+   shared, adapter-backed, or an intentional gap with a documented fallback:
    keep `AGENTS.md` and `.agents/skills/` canonical, add thin Claude discovery
    adapters when those surfaces exist, and classify plugin/hook differences or
    intentional gaps. Do not modify a third-party repository merely to satisfy

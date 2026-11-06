@@ -17,10 +17,13 @@ status, plan checkbox, or archive action is never proof.
    dirty changes and verify each repository independently.
 3. Read the nearest `AGENTS.md` and project-specific skill for any domain gate.
 4. Classify risk using `references/risk.md`.
-5. For a Lasso core change, read `docs/requirements.md` and record the native
+5. For a Lasso product change, read `docs/contracts/requirements.md` and record
+   the native
    Codex coverage, chosen extension surface, residual gap, deletion trigger, and
-   CR-7 Claude follower classification. Reject the change if it duplicates
-   Codex without a concrete gap or leaves the follower path unexplained.
+   follower compatibility from `docs/contracts/agent-runtimes.md`. For an
+   instance change, use that instance's requirement contract. Reject changes
+   that duplicate Codex without a concrete gap or leave the follower path
+   unexplained.
 
 ## Run deterministic gates
 
@@ -32,12 +35,14 @@ Prefer the project-owned contract in this order:
 4. Targeted native build, lint, and test commands when no aggregate recipe
    exists.
 
-Lasso core changes additionally run `just architecture-check`; it is a
-non-regression check, not a substitute for the capability-admission review.
+Run an architecture gate when the owning repository defines one. The Lasso
+product gate is `just verify`; instance-only recipes are not product commands.
 
-Resolve the stable checkout with `lasso project path <name>`
-when needed, then run its project-owned command. Do not accept a missing or
-skipped gate as success.
+Resolve the stable checkout with `lasso project path <name>` when needed, but
+run the project-owned command in the task worktree containing the actual diff.
+Check that stateful tests use the owner's isolated environment and that external
+projects do not acquire dependencies on private workspace tooling.
+Do not accept a missing or skipped gate as success.
 
 Run targeted tests early for feedback, then the required full gate. Record the
 exact failing command and first actionable cause. Fix in-scope failures and

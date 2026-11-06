@@ -35,6 +35,24 @@ lasso worktree list --format=json
 After resolving a checkout, read its nearest `AGENTS.md` and use its own
 commands. Do not put build, deploy, or credentials into the registry.
 
+## Project isolation
+
+Stable checkouts are discovery and integration inputs. Make project changes in
+an isolated task worktree, then read that checkout's nearest `AGENTS.md`.
+Fetch before choosing a base or publishing; preserve dirty checkouts and never
+auto-stash or force-push shared branches. Fetch failure means remote freshness
+is unknown, not that the local branch is current.
+
+External projects must remain usable without this workspace. Keep personal
+orchestration, host paths, and environment wrappers in the owning workspace or
+host configuration; keep credentials in the owner's secret store. Project
+changes must be independently useful and pass the project's own gates.
+
+A Git worktree does not isolate databases, ports, accounts, or shared deploy
+targets. Use the owner's environment isolation and shared-resource rules before
+running stateful tests or deploying. Registry membership grants no deployment
+or publication authority; follow each owner's policy.
+
 ## Modules
 
 List available packs from the Lasso kit:
